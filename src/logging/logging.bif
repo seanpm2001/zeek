@@ -2,6 +2,8 @@
 
 module Log;
 
+const default_logdir: string;
+
 %%{
 #include "zeek/logging/Manager.h"
 %%}

@@ -18,6 +18,7 @@
 #include "zeek/Func.h"
 #include "zeek/RunState.h"
 #include "zeek/logging/Manager.h"
+#include "zeek/logging/logging.bif.h"
 #include "zeek/logging/writers/ascii/ascii.bif.h"
 #include "zeek/threading/SerialTypes.h"
 
@@ -238,8 +239,13 @@ void Ascii::InitConfigOptions()
 	gzip_file_extension.assign((const char*)BifConst::LogAscii::gzip_file_extension->Bytes(),
 	                           BifConst::LogAscii::gzip_file_extension->Len());
 
+	// Remove with v6.1: LogAscii::logdir should be gone in favor
+	// of using Log::default_logdir.
 	logdir.assign((const char*)BifConst::LogAscii::logdir->Bytes(),
 	              BifConst::LogAscii::logdir->Len());
+	if ( logdir.empty() )
+		logdir.assign((const char*)BifConst::Log::default_logdir->Bytes(),
+		              BifConst::Log::default_logdir->Len());
 	}
 
 bool Ascii::InitFilterOptions()

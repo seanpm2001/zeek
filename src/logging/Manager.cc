@@ -1529,6 +1529,12 @@ std::string Manager::FormatRotationPath(EnumValPtr writer, std::string_view path
 		auto prefix = rp_val->GetFieldAs<StringVal>(1)->CheckString();
 		auto dir = dir_val->AsString()->CheckString();
 
+		// If rotation_format_func returned an empty dir and Log::default_logdir
+		// is set, use Log::default_logdir as directory to keep rotation
+		// confined within it.
+		if ( util::streq(dir, "") && ! BifConst::Log::default_logdir->Len() > 0 )
+			dir = BifConst::Log::default_logdir->CheckString();
+
 		if ( ! util::streq(dir, "") && ! util::detail::ensure_intermediate_dirs(dir) )
 			{
 			reporter->Error("Failed to create dir '%s' returned by "
