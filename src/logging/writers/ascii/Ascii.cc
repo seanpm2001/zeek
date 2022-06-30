@@ -356,7 +356,13 @@ bool Ascii::InitFilterOptions()
 			gzip_file_extension.assign(i->second);
 
 		else if ( strcmp(i->first, "logdir") == 0 )
+			{
+			// This doesn't play nice with leftover log rotation
+			// and log rotation in general. There's no documentation
+			// or a test for this specifically, so deprecate it.
+			reporter->Warning("Remove in v6.1. Per writer logdir is deprecated.");
 			logdir.assign(i->second);
+			}
 		}
 
 	if ( ! InitFormatter() )
