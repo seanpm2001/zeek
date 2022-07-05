@@ -1,7 +1,6 @@
 module Telemetry;
 
 export {
-
 	type labels_table: table[string] of string;
 	type labels_vector: vector of string;
 
@@ -36,17 +35,25 @@ export {
 	## Get a handle to a Counter of the given family and label values.
 	global counter_with_v: function(cf: CounterFamily, label_values: labels_vector &default=vector()): Counter;
 
-	## Shortcut for requesting a Counter instance without exposure
-	## to the intermediary CounterFamily instance.
-	global counter: function(opts: CounterOpts, labels: labels_table &default=table()): Counter;
-
-	## Shortcut for requesting a Counter instance without exposure
-	## to the intermediary CounterFamily instance, using a vector
-	## of label values rather than a table.
-	global counter_v: function(opts: CounterOpts, label_values: labels_vector &default=vector()): Counter;
-
-	## Increment counter by amount.
+	## Increment Counter by amount.
+	## Using a negative amount is an error.
 	global counter_inc: function(c: Counter, amount: double &default=1.0): bool;
+
+	## Helper to set a counter to given value.
+	## Setting a value that is less than the current value is an error
+	## and will be ignored. Use this only to track increasing values.
+	global counter_set: function(c: Counter, value: double): bool;
+
+	## Shortcut for incrementing a Counter instances without exposure
+	## to the intermediary objects using CounterOpts only.
+	global counter_opts_inc: function(opts: CounterOpts, labels: labels_table &default=table(), amount: double &default=1.0): bool;
+
+	## Shortcut for incrementing a Counter instance without exposure
+	## to the intermediary objects using CounterOpts only.
+	global counter_opts_inc_v: function(opts: CounterOpts, label_values: labels_vector &default=vector(), amount: double &default=1.0): bool;
+
+	global counter_opts_set: function(opts: CounterOpts, value: double, labels: labels_table &default=table()): bool;
+	global counter_opts_set_v: function(opts: CounterOpts, value: double, label_values: labels_vector &default=vector()): bool;
 
 	type GaugeOpts: record {
 		prefix: string;
@@ -78,29 +85,31 @@ export {
 	## than the table as :zeek:see:`GaugeFamily:gauge_with` expects.
 	global gauge_with_v: function(gf: GaugeFamily, label_values: labels_vector &default=vector()): Gauge;
 
-	## Shortcut for requesting a Gauge instance without exposure
-	## to the intermediary GaugeFamily instance.
-	global gauge: function(opts: GaugeOpts, labels: labels_table &default=table()): Gauge;
-
-	## Shortcut for requesting a Gauge instance without exposure
-	## to the intermediary GaugeFamily instance, using a vector
-	## of label values rather than a table.
-	global gauge_v: function(opts: GaugeOpts, labels: labels_vector &default=vector()): Gauge;
-
-	## Modify gauges.
+	## Increment a gauge by the given amount.
 	global gauge_inc: function(g: Gauge, amount: double &default=1.0): bool;
+	## Decrement a gauge by the given amount.
 	global gauge_dec: function(g: Gauge, amount: double &default=1.0): bool;
+	## Set a gauge to the given value.
 	global gauge_set: function(g: Gauge, value: double): bool;
 
-	## Collection hook. This hook is invoked every on every
-	## collect_interval and allows users to update their
-	## metrics.
+	# Shortcuts using options only
+	global gauge_opts_inc: function(opts: GaugeOpts, labels: labels_table &default=table(), amount: double &default=1.0): bool;
+	global gauge_opts_dec: function(opts: GaugeOpts, labels: labels_table &default=table(), amount: double &default=1.0): bool;
+	global gauge_opts_set: function(opts: GaugeOpts, value: double, labels: labels_table &default=table()): bool;
+
+	global gauge_opts_inc_v: function(opts: GaugeOpts, label_values: labels_vector &default=vector(), amount: double &default=1.0): bool;
+	global gauge_opts_dec_v: function(opts: GaugeOpts, label_values: labels_vector &default=vector(), amount: double &default=1.0): bool;
+	global gauge_opts_set_v: function(opts: GaugeOpts, value: double, label_values: labels_vector &default=vector()): bool;
+
+	## Collection hook. This hook is invoked collect_interval and allows
+	## users to update their metrics on a regular basis.
 	##
 	## Implementations should be light-weight, collect() may be called
-	## at high-frequencies.
+	## at high-frequencies. Not multiple times per second, but likely
+	## multiple times per minute.
 	##
-	## TBD: Add a parameter (for output)for future extensibility even
-	## if it's not used right now. Or, have collect2() then.
+	## TBD: Have a second hook running at a much lower frequency for
+	##      metrics that are heavy to collect?
 	global collect: hook();
 
 	## Could also see a collect() hook in the future that has an output
@@ -118,7 +127,6 @@ function make_labels(keys: vector of string, values: labels_vector): labels_tabl
 	local labels: labels_table;
 	for ( i in keys )
 		labels[keys[i]] = values[i];
-
 	return labels;
 	}
 
@@ -164,23 +172,43 @@ function counter_with_v(cf: CounterFamily, label_values: labels_vector): Counter
 	return counter_with(cf, make_labels(cf$__labels, label_values));
 	}
 
-function counter(opts: CounterOpts, labels: labels_table): Counter
-	{
-	local cf  = register_counter(opts);
-	return counter_with(cf, labels);
-	}
-
-function counter_v(opts: CounterOpts, labels: labels_vector): Counter
-	{
-	local cf  = register_counter(opts);
-	return counter_with_v(cf, labels);
-	}
-
 function counter_inc(c: Counter, amount: double &default=1.0): bool
 	{
 	return Telemetry::__dbl_counter_inc(c$__metric, amount);
 	}
 
+function counter_set(c: Counter, value: double &default=1.0): bool
+	{
+	local cur_value: double = Telemetry::__dbl_counter_value(c$__metric);
+	if (value < cur_value)
+		{
+		Reporter::error(fmt("Attempted to set lower counter value=%s cur_value=%s", value, cur_value));
+		return F;
+		}
+
+	return Telemetry::__dbl_counter_inc(c$__metric, value - cur_value);
+	}
+
+### Implementations for counter wrappers / short-cuts.
+
+function counter_opts_inc(opts: CounterOpts, labels: labels_table, amount: double &default=1.0): bool
+	{
+	return counter_inc(counter_with(register_counter(opts), labels), amount);
+	}
+
+function counter_opts_inc_v(opts: CounterOpts, label_values: labels_vector, amount: double &default=1.0): bool
+	{
+	return counter_inc(counter_with_v(register_counter(opts), label_values), amount);
+	}
+
+function counter_opts_set(opts: CounterOpts, value: double, labels: labels_table &default=table()): bool
+	{
+	return counter_set(counter_with(register_counter(opts), labels), value);
+	}
+function counter_opts_set_v(opts: CounterOpts, value: double, label_values: labels_vector &default=vector()): bool
+	{
+	return counter_set(counter_with_v(register_counter(opts), label_values), value);
+	}
 
 function register_gauge(opts: GaugeOpts): GaugeFamily
 	{
@@ -221,18 +249,6 @@ function gauge_with_v(gf: GaugeFamily, label_values: labels_vector): Gauge
 	return gauge_with(gf, make_labels(gf$__labels, label_values));
 	}
 
-function gauge(opts: GaugeOpts, labels: labels_table): Gauge
-	{
-	local gf  = register_gauge(opts);
-	return gauge_with(gf, labels);
-	}
-
-function gauge_v(opts: GaugeOpts, label_values: labels_vector): Gauge
-	{
-	local gf  = register_gauge(opts);
-	return gauge_with_v(gf, label_values);
-	}
-
 function gauge_inc(g: Gauge, amount: double &default=1.0): bool
 	{
 	return Telemetry::__dbl_gauge_inc(g$__metric, amount);
@@ -254,6 +270,37 @@ function gauge_set(g: Gauge, value: double): bool
 	return Telemetry::__dbl_gauge_dec(g$__metric, cur_value - value);
 	}
 
+### Implementations for gauge wrappers / short-cuts.
+
+function gauge_opts_inc(opts: GaugeOpts, labels: labels_table &default=table(), amount: double &default=1.0): bool
+	{
+	return gauge_inc(gauge_with(register_gauge(opts), labels), amount);
+	}
+
+function gauge_opts_dec(opts: GaugeOpts, labels: labels_table &default=table(), amount: double &default=1.0): bool
+	{
+	return gauge_dec(gauge_with(register_gauge(opts), labels), amount);
+	}
+
+function gauge_opts_set(opts: GaugeOpts, value: double, labels: labels_table &default=table()): bool
+	{
+	return gauge_set(gauge_with(register_gauge(opts), labels), value);
+	}
+
+function gauge_opts_inc_v(opts: GaugeOpts, label_values: labels_vector &default=vector(), amount: double &default=1.0): bool
+	{
+	return gauge_inc(gauge_with_v(register_gauge(opts), label_values), amount);
+	}
+function gauge_opts_dec_v(opts: GaugeOpts, label_values: labels_vector &default=vector(), amount: double &default=1.0): bool
+	{
+	return gauge_dec(gauge_with_v(register_gauge(opts), label_values), amount);
+	}
+
+function gauge_opts_set_v(opts: GaugeOpts, value: double, label_values: labels_vector &default=vector()): bool
+	{
+	return gauge_set(gauge_with_v(register_gauge(opts), label_values), value);
+	}
+
 event run_collect_hook()
 	{
 	hook Telemetry::collect();
@@ -264,6 +311,8 @@ event zeek_init()
 	{
 	schedule collect_interval { run_collect_hook() };
 	}
+
+
 
 
 module TelemetryExamples;
@@ -294,18 +343,21 @@ global conn_by_service_cf = Telemetry::register_counter([
 # indexed by a label vector as table[vector of string] of Counter.
 event connection_state_remove(c: connection)
 	{
+	local proto = cat(c$conn$proto);
 	if ( |c$service| == 0 )
 		{
 		print(fmt("Unknown %s", c$id));
-		local cx = Telemetry::counter_with_v(conn_by_service_cf, vector(cat(c$conn$proto), "unknown"));
-		Telemetry::counter_inc(cx);
+		local c1 = Telemetry::counter_with_v(conn_by_service_cf,
+		                                     vector(proto, "unknown"));
+		Telemetry::counter_inc(c1);
 		}
 
 	for (s in c$service)
 		{
 		print(fmt("%s %s", s, c$id));
-		local cy = Telemetry::counter_with_v(conn_by_service_cf, vector(cat(c$conn$proto), to_lower(s)));
-		Telemetry::counter_inc(cy);
+		local c2 = Telemetry::counter_with_v(conn_by_service_cf,
+		                                     vector(proto, to_lower(s)));
+		Telemetry::counter_inc(c2);
 		}
 	}
 
@@ -313,7 +365,7 @@ event connection_state_remove(c: connection)
 # Example: Tracking intel matches by indicator_type of Seen within Intel::match()
 #
 # Shows usage of labels as table, labels as vector and caching of Counter
-# instances by the user.
+# instances by the user as well as shortcuts through the options directly.
 #
 #     $ curl -sf http://localhost:4243/metrics | grep intel_matches
 #     # HELP zeek_intel_matches_total Zeek Script Metric
@@ -324,6 +376,7 @@ event connection_state_remove(c: connection)
 
 @load base/frameworks/intel
 @load policy/frameworks/intel/seen
+
 global intel_matches_cf = Telemetry::register_counter([
 	$prefix="zeek",
 	$name="intel_matches",
@@ -335,7 +388,7 @@ global intel_matches_counter_cache: table[string] of Telemetry::Counter;
 
 event Intel::match(s: Intel::Seen, items: set[Intel::Item])
 	{
-	print(fmt("Intel::match: %s %s", s, items));
+	print(fmt("Intel::match: %s %s items=%s", s$indicator, s$indicator_type, |items|));
 	local indicator_type = to_lower(cat(s$indicator_type));
 	local c1 = Telemetry::counter_with(intel_matches_cf, table(["indicator_type"] = indicator_type));
 	Telemetry::counter_inc(c1);
@@ -346,38 +399,32 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
 
 	# User-side cached version of counters.
 	#
-	# TBD: We could do transparent caching in the Telemetry module,
-	#      but maybe for now leave it out and put the burden on the
-	#      user for high-frequency events.
+	# We could do transparent caching in the Telemetry module,
+	# but maybe for now leave it out and put the burden on the
+	# user for high-frequency events (if that's actually needed).
 	if ( indicator_type !in intel_matches_counter_cache )
 		intel_matches_counter_cache[indicator_type] = Telemetry::counter_with_v(intel_matches_cf, vector(indicator_type));
 	local c3 = intel_matches_counter_cache[indicator_type];
 	Telemetry::counter_inc(c3);
 
-	# "Shortcut" version - maybe opts wouldn't be constructed inline.
-	local c4 = Telemetry::counter(
+	# Shortcut via CounterOpts directly.
+	Telemetry::counter_opts_inc(
 		[$prefix="zeek", $name="intel_matches", $unit="1", $labels=vector("indicator_type")],
 		table(["indicator_type"] = indicator_type)
 	);
-	Telemetry::counter_inc(c4);
 
-	local c5 = Telemetry::counter_v(
+	Telemetry::counter_opts_inc_v(
 		[$prefix="zeek", $name="intel_matches", $unit="1", $labels=vector("indicator_type")],
 		vector(indicator_type)
 	);
-	Telemetry::counter_inc(c4);
+
 	}
 
 # Example: Expose how many indicator types have been loaded. This
-# is using Telemetry::gauge_v() as a shortcut to access a Gauge
-# directly.
+# is using Telemetry::gauge_opts_set_v() shortcut to access set
+# values directly without going through intermediary objects.
 #
-# Hmm, hmm. maybe Telemetry::gauge_opts_set(opts, labels_table, value)
-# and Telemetry::gauge_opts_set_v(opts, labels_vector, value) would
-# be the better helper, for immediate setting a value for a gauge directly
-# rather than even getting the Gauge object back?
-#
-#    $ curl -sf http://localhost:4243/metrics | grep intel_indic
+#    $ curl -sf http://localhost:4243/metrics | grep intel_indicators
 #    # HELP zeek_intel_indicators Zeek Script Metric
 #    # TYPE zeek_intel_indicators gauge
 #    zeek_intel_indicators{endpoint="",indicator_type="addr"} 1.000000 1656951371148
@@ -385,6 +432,9 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
 #    zeek_intel_indicators{endpoint="",indicator_type="domain"} 3.000000 1656951371148
 #    zeek_intel_indicators{endpoint="",indicator_type="user_name"} 3.000000 1656951371148
 #    zeek_intel_indicators{endpoint="",indicator_type="url"} 2.000000 1656951371148
+#
+# An alternative implementation could extend the intel framework to expose
+# these numbers as stats without needing to poke at the details.
 
 module Intel;
 
@@ -392,7 +442,8 @@ global intel_gauge_opts = Telemetry::GaugeOpts(
 	$prefix="zeek",
 	$name="intel_indicators",
 	$unit="1",
-	$labels=vector("indicator_type")
+	$labels=vector("indicator_type"),
+	$helptext="Number of Intel indicators loaded"
 );
 
 hook Telemetry::collect()
@@ -400,13 +451,15 @@ hook Telemetry::collect()
 	print("Telemetry::collect() - intel");
 	local g: Telemetry::Gauge;
 
-	g = Telemetry::gauge_v(intel_gauge_opts, vector("addr"));
-	Telemetry::gauge_set(g, |Intel::min_data_store$host_data|);
+	Telemetry::gauge_opts_set_v(intel_gauge_opts,
+	                            |Intel::min_data_store$host_data|,
+	                            vector("addr"));
 
-	g = Telemetry::gauge_v(intel_gauge_opts, vector("subnet"));
-	Telemetry::gauge_set(g, |Intel::min_data_store$subnet_data|);
+	Telemetry::gauge_opts_set_v(intel_gauge_opts,
+	                            |Intel::min_data_store$subnet_data|,
+	                            vector("subnet"));
 
-	# Group the string_data set by type and count.
+	# Group the string_data set by type and count entries.
 	local counts: table[string] of count &default=0;
 	for ([k, _type] in Intel::min_data_store$string_data)
 		{
@@ -416,42 +469,59 @@ hook Telemetry::collect()
 		}
 
 	for ([k], v in counts)
-		{
-		g = Telemetry::gauge_v(intel_gauge_opts, vector(k));
-		Telemetry::gauge_set(g, v);
-		}
+		Telemetry::gauge_opts_set_v(intel_gauge_opts, v, vector(k));
 	}
+
+module TelemetryExamples;
 
 # Example: Expose pending timers and current connections from script land
 #          as gauges, update them within the Telemetry::collect hook.
 #
-# TBD: Neither metric below has labels, so this is a bit verbose with the
-#      extra GaugeFamily. Maybe register_gauge_vec() and special
-#      case register_gauge() to return a Gauge directly.
+#    curl -sf http://localhost:4242/metrics | grep -e timers -e connections
+#    # HELP zeek_timers_total Total number of timers created.
+#    # TYPE zeek_timers_total counter
+#    zeek_timers_total{endpoint=""} 196.000000 1657010240858
+#    # HELP zeek_active_timers Currently active timers.
+#    # TYPE zeek_active_timers gauge
+#    zeek_active_timers{endpoint=""} 66.000000 1657010240858
+#    # HELP zeek_current_connections Currently active connections.
+#    # TYPE zeek_current_connections gauge
+#    zeek_current_connections{endpoint=""} 19.000000 1657010240858
 #
-#    $ curl -s localhost:4243/metrics | grep ^zeek_current
-#    zeek_current_timers{endpoint=""} 139.000000 1656667176875
-#    zeek_current_connections{endpoint=""} 59.000000 1656667176875
+# These things may be better tracked in core C++ code rather than on
+# a script-level.
 #
 global current_conns_gf = Telemetry::register_gauge([
 	$prefix="zeek",
 	$name="current_connections",
-	$unit="1"
+	$unit="1",
+	$helptext="Currently active connections."
 ]);
 global current_conns_g = Telemetry::gauge_with(current_conns_gf);
 
 global current_timers_gf = Telemetry::register_gauge([
 	$prefix="zeek",
-	$name="current_timers",
-	$unit="1"
+	$name="active_timers",
+	$unit="1",
+	$helptext="Currently active timers."
 ]);
 global current_timers_g = Telemetry::gauge_with(current_timers_gf);
 
+# This ends-up being zeek_timers_total on the Prometheus side.
+global total_timers_cf = Telemetry::register_counter([
+	$prefix="zeek",
+	$name="timers",
+	$unit="1",
+	$helptext="Total number of timers created."
+]);
+global total_timers_c = Telemetry::counter_with(total_timers_cf);
+
 hook Telemetry::collect()
 	{
-	print("Telemetry::collect()");
+	print("Telemetry::collect() - conn and timer stats");
 	local cs = get_conn_stats();
 	Telemetry::gauge_set(current_conns_g, cs$current_conns);
 	local ts = get_timer_stats();
 	Telemetry::gauge_set(current_timers_g, ts$current);
+	Telemetry::counter_set(total_timers_c, ts$cumulative);
 	}
