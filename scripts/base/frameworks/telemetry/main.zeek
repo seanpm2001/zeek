@@ -27,7 +27,7 @@ export {
 	};
 
 	## Register a counter family. The return value is a
-        ## :zeek:see:`Telemetry:CounterFamily`
+	## :zeek:see:`Telemetry:CounterFamily`
 	## instance that can be used with :zeek:see`Telemetry::counter_with`
 	## and :zeek:see:`Telemetry::counter_with_v()`
 	global register_counter_family: function(opts: CounterOpts): CounterFamily;
@@ -544,4 +544,27 @@ hook Telemetry::collect()
 	local ts = get_timer_stats();
 	Telemetry::gauge_set(current_timers_g, ts$current);
 	Telemetry::counter_set(total_timers_c, ts$cumulative);
+	}
+
+
+# Example: Counting x509 extensions in a table and sync'ing to the merics
+#          during the Telemetry::collect() hook.
+global x509_extensions_cf = Telemetry::register_counter_family([
+	$prefix="zeek",
+	$name="x509_extensions",
+	$unit="1",
+	$labels=vector("name")
+]);
+
+global x509_extension_counts: table[string] of count &default=0;
+
+event x509_extension(f: fa_file, ext: X509::Extension)
+	{
+	++x509_extension_counts[ext$name];
+	}
+
+hook Telemetry::collect()
+	{
+	for ( k ,v in x509_extension_counts )
+		Telemetry::counter_family_set(Intel::x509_extensions_cf, v, vector(k));
 	}
