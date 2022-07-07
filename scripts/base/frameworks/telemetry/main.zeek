@@ -493,6 +493,19 @@ hook Telemetry::collect()
 		Telemetry::gauge_family_set(intel_gauge_gf, v, vector(k));
 	}
 
+global log_writes_cf = Telemetry::register_counter_family([
+	$prefix="zeek",
+	$name="log_writes",
+	$unit="1",
+	$labels=vector("name")
+]);
+
+# Example: Track number of log writes per log stream via counters.
+#
+hook Log::log_stream_policy(rec: any, id: Log::ID)
+	{
+	Telemetry::counter_family_inc(log_writes_cf, vector(cat(id)));
+	}
 
 # Example: Expose pending timers and current connections through
 #          scriptland gauges, update them within the Telemetry::collect hook.
