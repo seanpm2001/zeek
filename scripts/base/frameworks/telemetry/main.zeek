@@ -6,6 +6,9 @@ export {
 	type labels_table: table[string] of string;
 	type labels_vector: vector of string;
 
+	## Default bounds/buckets for histograms if no bounds are explicitly provided.
+	const default_histogram_bounds = vector(0.01, 0.1, 1.0, 10.0, 30.0, 60.0) &redef;
+
 	## Options type shared by all metric types
 	type MetricOpts: record {
 		prefix: string;
@@ -17,9 +20,8 @@ export {
 		labels: vector of string &default=vector();
 		is_total: bool &optional;
 
-		## If this is a histogram, list_metrics() will populate
-		## it upon reading back, otherwise unused.
-		bounds: vector of double &optional;
+		## Only used when creating HistogramFamily instances.
+		bounds: vector of double &default=default_histogram_bounds;
 	};
 
 	type CounterFamily: record {
@@ -133,6 +135,33 @@ export {
 	global gauge_family_set_t: function(g: GaugeFamily,
 	                                    value: double,
 	                                    labels: labels_table &default=table()): bool;
+	type HistogramFamily: record {
+		__family: opaque of dbl_histogram_metric_family;
+		__labels: vector of string;
+	};
+
+	type Histogram: record {
+		__metric: opaque of dbl_histogram_metric;
+	};
+
+	global register_histogram_family: function(opts: MetricOpts): HistogramFamily;
+	global histogram_with: function(hf: HistogramFamily,
+	                                label_values: labels_vector &default=vector()): Histogram;
+
+	global histogram_with_t: function(hf: HistogramFamily,
+	                                  labels: labels_table &default=table()): Histogram;
+
+	## Observe a measurement for a Histogram
+	global histogram_observe: function(h: Histogram, measurement: double): bool;
+
+	## Observe a measurement through a HistogramFamily
+	global histogram_family_observe: function(hf: HistogramFamily,
+	                                          measurement: double,
+	                                          label_values: labels_vector &default=vector()): bool;
+
+	global histogram_family_observe_t: function(hf: HistogramFamily,
+	                                            measurement: double,
+	                                            labels: labels_table &default=table()): bool;
 
 	## Collection hook. This hook is invoked collect_interval and allows
 	## users to update their metrics on a regular basis.
@@ -328,6 +357,61 @@ function gauge_family_set_t(g: GaugeFamily, value: double, labels: labels_table)
 	return gauge_set(gauge_with_t(g, labels), value);
 	}
 
+function register_histogram_family(opts: MetricOpts): HistogramFamily
+	{
+		local f = Telemetry::__dbl_histogram_family(
+			opts$prefix,
+			opts$name,
+			opts$labels,
+			opts$bounds,
+			opts$helptext,
+			opts$unit,
+			opts?$is_total ? opts$is_total : F
+		);
+		return HistogramFamily($__family=f, $__labels=opts$labels);
+	}
+
+# Fallback Histogram when there are issues with the labels.
+global error_histogram_hf = register_histogram_family([
+	$prefix="zeek",
+	$name="telemetry_histogram_usage_error",
+	$unit="1",
+	$helptext="This histogram is returned when label usage for histograms is wrong. Check reporter.log if non-zero.",
+	$bounds=vector(1.0)
+]);
+#
+function histogram_with(hf: HistogramFamily, label_values: labels_vector): Histogram
+	{
+	if ( |hf$__labels| != |label_values| )
+		{
+		Reporter::error(fmt("Invalid label values expected %s, have %s", |hf$__labels|, |label_values|));
+		return histogram_with(error_histogram_hf);
+		}
+
+	return histogram_with_t(hf, make_labels(hf$__labels, label_values));
+	}
+
+function histogram_with_t(hf: HistogramFamily, labels: labels_table &default=table()): Histogram
+	{
+	local m = Telemetry::__dbl_histogram_metric_get_or_add(hf$__family, labels);
+	return Histogram($__metric=m);
+	}
+
+function histogram_observe(h: Histogram, measurement: double): bool
+	{
+	return Telemetry::__dbl_histogram_observe(h$__metric, measurement);
+	}
+
+function histogram_family_observe(hf: HistogramFamily, measurement: double, label_values: labels_vector): bool
+	{
+	return histogram_observe(histogram_with(hf, label_values), measurement);
+	}
+
+function histogram_family_observe_t(hf: HistogramFamily, measurement: double, label_values: labels_table): bool
+	{
+	return histogram_observe(histogram_with_t(hf, label_values), measurement);
+	}
+
 event run_collect_hook()
 	{
 	hook Telemetry::collect();
@@ -433,6 +517,14 @@ global conn_by_service_cf = Telemetry::register_counter_family([
 	$labels=vector("protocol", "service")
 ]);
 
+# Also track connection durations in a Histogram using the default bounds/buckets.
+global conn_durations_hf = Telemetry::register_histogram_family([
+	$prefix="zeek",
+	$name="connection_durations",
+	$unit="1",
+	$labels=vector("proto", "service")
+]);
+
 # We could add a custom caching table with key "<proto>-<service>" if
 # the on-demand creation of Counter objects would be too expensive.
 event connection_state_remove(c: connection)
@@ -444,6 +536,9 @@ event connection_state_remove(c: connection)
 		local c1 = Telemetry::counter_with(conn_by_service_cf,
 		                                   vector(proto, "unknown"));
 		Telemetry::counter_inc(c1);
+
+		local h1 = Telemetry::histogram_with(conn_durations_hf, vector(proto, "unknown"));
+		Telemetry::histogram_observe(h1, interval_to_double(c$duration));
 		}
 
 	for (s in c$service)
@@ -452,6 +547,9 @@ event connection_state_remove(c: connection)
 		local c2 = Telemetry::counter_with(conn_by_service_cf,
 		                                   vector(proto, to_lower(s)));
 		Telemetry::counter_inc(c2);
+
+		local h2 = Telemetry::histogram_with(conn_durations_hf, vector(proto, to_lower(s)));
+		Telemetry::histogram_observe(h2, interval_to_double(c$duration));
 		}
 	}
 
