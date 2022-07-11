@@ -6,7 +6,8 @@ export {
 	type labels_table: table[string] of string;
 	type labels_vector: vector of string;
 
-	type CounterOpts: record {
+	## Options type shared by all metric types
+	type MetricOpts: record {
 		prefix: string;
 		name: string;
 		## Use the pseudo-unit "1" if this is a unit-less metric.
@@ -14,7 +15,7 @@ export {
 		## Documentation for this metric.
 		helptext: string &default="Zeek Script Metric";
 		labels: vector of string &default=vector();
-		is_total: bool &default=T;
+		is_total: bool &optional;
 	};
 
 	type CounterFamily: record {
@@ -30,7 +31,7 @@ export {
 	## :zeek:see:`Telemetry:CounterFamily`
 	## instance that can be used with :zeek:see`Telemetry::counter_with`
 	## and :zeek:see:`Telemetry::counter_with_v()`
-	global register_counter_family: function(opts: CounterOpts): CounterFamily;
+	global register_counter_family: function(opts: MetricOpts): CounterFamily;
 
 	## Get a handle to a Counter of the given family and label values.
 	global counter_with: function(cf: CounterFamily,
@@ -72,17 +73,6 @@ export {
 	                                      value: double,
 	                                      labels: labels_table &default=table()): bool;
 
-	type GaugeOpts: record {
-		prefix: string;
-		name: string;
-		## Use the pseudo-unit "1" if this is a unit-less metric.
-		unit: string;
-		## Documentation for this metric.
-		helptext: string &default="Zeek Script Metric";
-		labels: vector of string &default=vector();
-		is_total: bool &default=F;
-	};
-
 	type GaugeFamily: record {
 		__family: opaque of dbl_gauge_metric_family;
 		__labels: vector of string;
@@ -92,7 +82,7 @@ export {
 		__metric: opaque of dbl_gauge_metric;
 	};
 
-	global register_gauge_family: function(opts: GaugeOpts): GaugeFamily;
+	global register_gauge_family: function(opts: MetricOpts): GaugeFamily;
 
 
 	## Convenience function to use a vector of label values rather
@@ -137,8 +127,8 @@ export {
 
 	## Set a Gauge by the given amount through a GaugeFamily.
 	global gauge_family_set_t: function(g: GaugeFamily,
-	                                    value: double, labels:
-	                                    labels_table &default=table()): bool;
+	                                    value: double,
+	                                    labels: labels_table &default=table()): bool;
 
 	## Collection hook. This hook is invoked collect_interval and allows
 	## users to update their metrics on a regular basis.
@@ -169,7 +159,7 @@ function make_labels(keys: vector of string, values: labels_vector): labels_tabl
 	return labels;
 	}
 
-function register_counter_family(opts: CounterOpts): CounterFamily
+function register_counter_family(opts: MetricOpts): CounterFamily
 	{
 	local f = Telemetry::__dbl_counter_family(
 		opts$prefix,
@@ -177,7 +167,7 @@ function register_counter_family(opts: CounterOpts): CounterFamily
 		opts$labels,
 		opts$helptext,
 		opts$unit,
-		opts$is_total  # is_sum
+		opts?$is_total ? opts$is_total : T
 	);
 	return CounterFamily($__family=f, $__labels=opts$labels);
 	}
@@ -245,7 +235,7 @@ function counter_family_set_t(cf: CounterFamily, value: double, labels: labels_t
 	return counter_set(counter_with_t(cf, labels), value);
 	}
 
-function register_gauge_family(opts: GaugeOpts): GaugeFamily
+function register_gauge_family(opts: MetricOpts): GaugeFamily
 	{
 	local f = Telemetry::__dbl_gauge_family(
 		opts$prefix,
@@ -253,7 +243,7 @@ function register_gauge_family(opts: GaugeOpts): GaugeFamily
 		opts$labels,
 		opts$helptext,
 		opts$unit,
-		opts$is_total  # is_sum
+		opts?$is_total ? opts$is_total : F
 	);
 	return GaugeFamily($__family=f, $__labels=opts$labels);
 	}
