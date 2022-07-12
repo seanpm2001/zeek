@@ -180,6 +180,49 @@ export {
 
 	## Interval in which the collect hook is invoked.
 	option collect_interval = 10sec;
+
+	# API for listing/iterating metrics follows.
+
+	## For introspection.
+	type MetricType: enum {
+		DBL_COUNTER,
+		INT_COUNTER,
+		DBL_GAUGE,
+		INT_GAUGE,
+		DBL_HISTOGRAM,
+		INT_HISTOGRAM,
+	};
+
+	## Entry returned by :zeek:see:`Telemetry::list_metrics()`
+	type Metric: record {
+		opts: MetricOpts;
+
+		## The labels associated with this Metric.
+		label_values: vector of string;
+
+		## The value of gauge or counter types cast to a double
+		## independent of the underlying type.
+		value: double &optional;
+
+		## The count value of the underlying gauge or counter
+		## if the int version is in use.
+		count_value: count &optional;
+
+		## Internal metric type.
+		metric_type: MetricType;
+	};
+
+	## List all existing Metric instances matching the given
+	## name and prefix. For gauge and counter metrics their
+	## current value is included in the result.
+	## `prefix` and `name` support globbing.
+	## By default, all metrics with the "zeek" prefix are returned.
+	global list_metrics: function(name: string &default="*",
+	                              prefix: string &default="zeek"): vector of Metric;
+
+	## Separate API to list histograms as expanded counters.
+	global list_histograms_expanded: function(name: string &default="*",
+	                                          prefix: string &default="zeek"): vector of Metric;
 }
 
 
@@ -422,76 +465,6 @@ event zeek_init()
 	{
 	schedule collect_interval { run_collect_hook() };
 	}
-
-## Separate for review.
-module Telemetry;
-
-export {
-	## For introspection.
-	type MetricType: enum {
-		DBL_COUNTER,
-		INT_COUNTER,
-		DBL_GAUGE,
-		INT_GAUGE,
-		DBL_HISTOGRAM,
-		INT_HISTOGRAM,
-	};
-
-	type ListOpts: record {
-		prefix: string &default = "zeek";
-		name: string &optional;
-
-		# Maybe, filter on label values? Not sure it's worth it: Could for example
-		# use gauge_with() to get a concrete Gauge instance and read it's value instead.
-		# Can extend later if there's a use-case.
-		# label_match: table[string] of string &optional;
-
-		## Set value in the retuned Metric record. This
-		## only works for counter and gauges. Histograms
-		## don't have a single value.
-		# It's also not clear how histograms should be
-		# represented in a telemetry.log or how one
-		# would work with them in a way that's easy.
-		include_values: bool &optional;
-	};
-
-	## Entry returned by :zeek:see:`Telemetry::list_metrics()`
-	type Metric: record {
-		opts: MetricOpts;
-
-		## The labels associated with this Metric.
-		label_values: vector of string;
-
-		## Set if include_values is T. Represents the
-		## value of the gauge or counter cast to double.
-		value: double &optional;
-
-		## Set if include_values is T and this is a int type
-		## counter or gauge. Generally prefer to just use value
-		## unless there's something that doesn't work.
-		# I'm not even sure we should expose this.
-		count_value: count &optional;
-
-		## Internal metric type.
-		metric_type: MetricType;
-
-		# References to opaque metrics. I *think* we can skip
-		# them. Initially they made it easier to read values
-		# back, but can use ListOpts$include_values for that
-		# and skip the complications in script-land.
-		# __dbl_counter_metric: opaque of dbl_counter_metric;
-		# __int_counter_metric: opaque of int_counter_metric;
-		# __dbl_gauge_metric: opaque of dbl_gauge_metric;
-		# __int_gauge_metric: opaque of int_gauge_metric;
-	};
-
-	## List all existing Metric instances matching the given ListOpts
-	global list_metrics: function(lo: ListOpts &default=[]): vector of Metric;
-
-	## Separate API to list histograms as expanded counters.
-	global list_expanded_histograms: function(lo: ListOpts &default=[]): vector of Metric;
-}
-
 
 
 module TelemetryExamples;
