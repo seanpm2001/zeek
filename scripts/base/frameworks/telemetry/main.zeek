@@ -185,11 +185,11 @@ export {
 
 	## For introspection.
 	type MetricType: enum {
-		DBL_COUNTER,
+		DOUBLE_COUNTER,
 		INT_COUNTER,
-		DBL_GAUGE,
+		DOUBLE_GAUGE,
 		INT_GAUGE,
-		DBL_HISTOGRAM,
+		DOUBLE_HISTOGRAM,
 		INT_HISTOGRAM,
 	};
 
@@ -201,15 +201,35 @@ export {
 		label_values: vector of string;
 
 		## The value of gauge or counter types cast to a double
-		## independent of the underlying type.
+		## independent of the underlying data type.
+		## This value is set for all counter and gauge types,
+		## it is unset for histograms.
 		value: double &optional;
 
 		## The count value of the underlying gauge or counter
-		## if the int version is in use.
+		## if the int version is used. It is unset for the DOUBLE_*
+		## metric types.
 		count_value: count &optional;
 
-		## Internal metric type.
+		## Internal metric type of this metric.
 		metric_type: MetricType;
+	};
+
+	## Metric encapsulating a Histogram (bucket of counters)
+	## as returned by list_histograms()
+	type HistogramMetric: record {
+		## The metric describing this histogram
+		histogram: Metric;
+
+		## Individual counters for each of the buckets as
+		## configured via `histogram$opts$bounds`.
+		buckets: vector of Metric;
+
+		## Counter metric for the total number of observations.
+		count_: Metric;
+
+		## Gauge metric for sum of all observations.
+		sum: Metric;
 	};
 
 	## List all existing Metric instances matching the given
@@ -220,9 +240,9 @@ export {
 	global list_metrics: function(name: string &default="*",
 	                              prefix: string &default="zeek"): vector of Metric;
 
-	## Separate API to list histograms as expanded counters.
-	global list_histograms_expanded: function(name: string &default="*",
-	                                          prefix: string &default="zeek"): vector of Metric;
+	## Separate API to list histograms and their values as HistogramMetric.
+	global list_histograms: function(name: string &default="*",
+	                                 prefix: string &default="zeek"): vector of HistogramMetric;
 }
 
 
