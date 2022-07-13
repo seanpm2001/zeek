@@ -51,6 +51,32 @@ public:
 	virtual void InitPostScript();
 
 	/**
+	 * Concrete instances of metrics returned by list_metrics;
+	 */
+	// TODO: These are to be converted in telemetry.bif into Zeek record types.
+	class Metric
+		{
+		MetricFamily* mf;
+		// DblCounter *int_counter;
+		// DblGauge *dbl_counter;
+
+		Span<const std::string_view> labels;
+
+		std::optional<double> value;
+		std::optional<int64_t> int_value;
+		};
+
+	/**
+	 * List all metrics matching prefix and name (supporting globs)
+	 *
+	 * @param name
+	 * @param prefix
+	 *
+	 * @return std::vector<Metric>
+	 */
+	std::vector<Metric> ListMetrics(std::string_view prefix, std::string_view name);
+
+	/**
 	 * @return A counter metric family. Creates the family lazily if necessary.
 	 * @param prefix The prefix (namespace) this family belongs to.
 	 * @param name The human-readable name of the metric, e.g., `requests`.

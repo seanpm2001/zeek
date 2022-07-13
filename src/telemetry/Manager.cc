@@ -10,6 +10,9 @@
 
 #include "broker/telemetry/metric_registry.hh"
 
+// For metrics_collector...
+#include "broker/telemetry/metric_registry_impl.hh"
+
 namespace
 	{
 using NativeManager = broker::telemetry::metric_registry;
@@ -36,6 +39,50 @@ void Manager::InitPostBrokerSetup(broker::endpoint& ep)
 	auto reg = NativeManager::merge(NativeManager{pimpl.get()}, ep);
 	NativeManagerImplPtr ptr{NewRef{}, reg.pimpl()};
 	pimpl.swap(ptr);
+	}
+
+namespace bt = broker::telemetry;
+class ListCollector : public broker::telemetry::metrics_collector
+	{
+public:
+	void operator()(const bt::dbl_counter_family_hdl* family, const bt::dbl_counter_hdl* counter,
+	                broker::span<const bt::label_view> labels)
+		{
+		}
+	void operator()(const bt::int_counter_family_hdl* family, const bt::int_counter_hdl* counter,
+	                broker::span<const bt::label_view> labels)
+		{
+		}
+	void operator()(const bt::dbl_gauge_family_hdl* family, const bt::dbl_gauge_hdl* counter,
+	                broker::span<const bt::label_view> labels)
+		{
+		}
+	void operator()(const bt::int_gauge_family_hdl* family, const bt::int_gauge_hdl* counter,
+	                broker::span<const bt::label_view> labels)
+		{
+		}
+	void operator()(const bt::dbl_histogram_family_hdl* family,
+	                const bt::dbl_histogram_hdl* counter, broker::span<const bt::label_view> labels)
+		{
+		}
+	void operator()(const bt::int_histogram_family_hdl* family,
+	                const bt::int_histogram_hdl* counter, broker::span<const bt::label_view> labels)
+		{
+		}
+
+	std::vector<Manager::Metric> metrics;
+	};
+
+std::vector<Manager::Metric> Manager::ListMetrics(std::string_view prefix, std::string_view name)
+	{
+	std::vector<Manager::Metric> metrics;
+	auto list_collector = ListCollector();
+
+	pimpl->collect(list_collector);
+
+	// convert list to Metric
+
+	return list_collector.metrics;
 	}
 
 	} // namespace zeek::telemetry
