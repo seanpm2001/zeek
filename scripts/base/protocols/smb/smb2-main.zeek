@@ -127,6 +127,7 @@ event smb2_create_request(c: connection, hdr: SMB2::Header, request: SMB2::Creat
 		request$filename = "<share_root>";
 
 	c$smb_state$current_file$name = request$filename;
+	c$smb_state$current_file$delete_on_close = (request$create_options & 0x00001000) != 0;
 
 	switch ( c$smb_state$current_tree$share_type )
 		{
@@ -327,6 +328,14 @@ event smb2_close_request(c: connection, hdr: SMB2::Header, file_id: SMB2::GUID) 
 		delete c$smb_state$fid_map[file_id$persistent+file_id$volatile];
 
 		SMB::write_file_log(c$smb_state);
+
+		# If this file was opened with delete_on_close set, produce
+		# a DELETE entry in the smb_files.log, too.
+		if ( c$smb_state$current_file$delete_on_close )
+			{
+			c$smb_state$current_file$action = SMB::FILE_DELETE;
+			SMB::write_file_log(c$smb_state);
+			}
 		}
 	else
 		{

@@ -69,6 +69,9 @@ export {
 		prev_name		: string  &log &optional;
 		## Last time this file was modified.
 		times			: SMB::MACTimes &log &optional;
+		## Whether delete_on_close was set during the CREATE request
+		## for this file.
+		delete_on_close         : bool &default=F;
 	};
 
 	## This record is for the smb_mapping.log
