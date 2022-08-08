@@ -22,7 +22,7 @@ namespace zeek::detail
 // during reservation & writes.
 struct HashKeyComparer
 	{
-	bool operator()(const std::unique_ptr<HashKey>& a, const std::unique_ptr<HashKey>& b) const
+	bool operator()(HashKey* a, HashKey* b) const
 		{
 		if ( a->Hash() != b->Hash() )
 			return a->Hash() < b->Hash();
@@ -32,7 +32,7 @@ struct HashKeyComparer
 		}
 	};
 
-using HashkeyMap = std::map<std::unique_ptr<HashKey>, ListValPtr, HashKeyComparer>;
+using HashkeyMap = std::map<HashKey*, ListValPtr, HashKeyComparer>;
 using HashkeyMapPtr = std::unique_ptr<HashkeyMap>;
 
 // Helper that produces a table from HashKeys to the ListVal indexes into the
