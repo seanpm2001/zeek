@@ -47,6 +47,9 @@ public:
 
 	void SetEnable(bool arg_enable) { enabled = arg_enable; }
 
+	const char* Group() { return group; }
+	void SetGroup(const char* arg_group) { group = util::copy_string(arg_group); }
+
 	// Flags the event as interesting even if there is no body defined. In
 	// particular, this will then still pass the event on to plugins.
 	void SetGenerateAlways() { generate_always = true; }
@@ -62,6 +65,7 @@ private:
 	bool enabled;
 	bool error_handler; // this handler reports error messages.
 	bool generate_always;
+	const char* group;
 
 	std::unordered_set<std::string> auto_publish;
 	};

@@ -122,6 +122,17 @@ void EventRegistry::PrintDebug()
 		}
 	}
 
+void EventRegistry::SetGroup(const char* name, const char* group)
+	{
+	return; // FIXME. THis triggers the error below for plugin events.
+
+	EventHandler* eh = Lookup(name);
+	if ( ! eh )
+		reporter->InternalError("unknown event handler %s in SetGroup()", name);
+
+	eh->SetGroup(group);
+	}
+
 void EventRegistry::SetErrorHandler(std::string_view name)
 	{
 	EventHandler* eh = Lookup(name);
@@ -143,6 +154,16 @@ void EventRegistry::ActivateAllHandlers()
 		{
 		if ( auto event = Lookup(name) )
 			event->SetGenerateAlways();
+		}
+	}
+
+void EventRegistry::EnableGroup(const char* group, bool enable)
+	{
+	for ( const auto& entry : handlers )
+		{
+		EventHandler* v = entry.second.get();
+		if ( v->Group() && strcmp(v->Group(), group) == 0 )
+			v->SetEnable(enable);
 		}
 	}
 

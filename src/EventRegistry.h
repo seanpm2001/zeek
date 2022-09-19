@@ -49,6 +49,9 @@ public:
 	using string_list = std::vector<std::string>;
 	string_list Match(RE_Matcher* pattern);
 
+	// Associates a group with the given event.
+	void SetGroup(const char* name, const char* group);
+
 	// Marks a handler as handling errors. Error handler will not be called
 	// recursively to avoid infinite loops in case they trigger an error
 	// themselves.
@@ -57,6 +60,9 @@ public:
 	string_list UnusedHandlers();
 	string_list UsedHandlers();
 	string_list AllHandlers();
+
+	// Enable/disable all members of the group.
+	void EnableGroup(const char* group, bool enable);
 
 	void PrintDebug();
 

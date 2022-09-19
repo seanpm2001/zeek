@@ -5542,3 +5542,29 @@ function compress_path%(dir: string%): string
 	%{
 	return zeek::make_intrusive<zeek::StringVal>(zeek::util::detail::normalize_path(dir->ToStdString()));
 	%}
+
+
+## Enables all event handlers in a given group. One can tag event handlers with
+## the :bro:attr:`&group` attribute to logically group them together, e.g,
+## ``event foo() &group="bar"``. This function enables all event handlers that
+## belong to such a group.
+##
+## group: The group.
+##
+## .. zeek:see:: disable_event_group
+function enable_event_group%(group: string%) : any
+       %{
+       event_registry->EnableGroup(group->CheckString(), true);
+       return 0;
+       %}
+
+## Disables all event handlers in a given group.
+##
+## group: The group.
+##
+## .. zeek:see:: enable_event_group
+function disable_event_group%(group: string%) : any
+       %{
+       event_registry->EnableGroup(group->CheckString(), false);
+       return 0;
+       %}

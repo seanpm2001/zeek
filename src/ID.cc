@@ -254,10 +254,22 @@ void ID::UpdateValAttrs()
 
 	if ( tag == TYPE_FUNC )
 		{
-		const auto& attr = attrs->Find(ATTR_ERROR_HANDLER);
-
-		if ( attr )
+		const auto& err_handler_attr = attrs->Find(ATTR_ERROR_HANDLER);
+		if ( err_handler_attr )
 			event_registry->SetErrorHandler(Name());
+
+		const auto &group_attr = attrs->Find(ATTR_GROUP);
+		if ( group_attr )
+			{
+			Val* group = group_attr->GetExpr()->ExprVal();
+			if ( group )
+				{
+				if ( group->GetType()->Tag() == TYPE_STRING )
+					event_registry->SetGroup(Name(), group->AsString()->CheckString());
+				else
+					Error("&group attribute takes string");
+				}
+			}
 		}
 
 	if ( tag == TYPE_RECORD )

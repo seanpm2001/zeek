@@ -20,6 +20,7 @@ EventHandler::EventHandler(std::string arg_name)
 	error_handler = false;
 	enabled = true;
 	generate_always = false;
+	group = nullptr;
 	}
 
 EventHandler::operator bool() const
