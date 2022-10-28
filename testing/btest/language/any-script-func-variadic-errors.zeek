@@ -1,4 +1,4 @@
-# @TEST-EXEC: zeek -b %INPUT >output
+# @TEST-EXEC-FAIL: zeek -b %INPUT >output
 # @TEST-EXEC: TEST_DIFF_CANONIFIER=$SCRIPTS/diff-remove-abspath btest-diff output
 # @TEST-EXEC: TEST_DIFF_CANONIFIER=$SCRIPTS/diff-remove-abspath btest-diff .stderr
 
@@ -44,4 +44,13 @@ event zeek_init()
 	# Not reached
 	print "FAIL";
 	f(1);
+	}
+
+@TEST-START-NEXT
+# This won't work... sorry.
+event zeek_init()
+	{
+	local myfmt = fmt;
+	myfmt("Hey");
+	myfmt("Hey %s", "Zeek");
 	}

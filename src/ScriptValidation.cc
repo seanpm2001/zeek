@@ -89,9 +89,68 @@ private:
 	int hook_depth = 0;
 	};
 
+// Validate CallExpr for non-builtin functions with a single parameter of type
+// any. These are treated as potential untyped vararg functions during parsing
+// when may not yet know if a function is a BIF or a script func.
+class CallExprScriptValidation : public TraversalCallback
+	{
+public:
+	TraversalCode PreExpr(const Expr* expr)
+		{
+		if ( expr->Tag() != EXPR_CALL )
+			return TC_CONTINUE;
+
+		const Expr* func_expr = expr->AsCallExpr()->Func();
+		if ( func_expr->Tag() != EXPR_NAME )
+			return TC_CONTINUE;
+
+		const FuncType* func_type = func_expr->GetType()->AsFuncType();
+		if ( func_type->Flavor() != FUNC_FLAVOR_FUNCTION )
+			return TC_CONTINUE;
+
+		zeek::RecordTypePtr params = func_type->Params();
+
+		// Is it variadic?
+		if ( params->NumFields() != 1 || params->FieldDecl(0)->type->Tag() != TYPE_ANY )
+			return TC_CONTINUE;
+
+		// If there's no val for a given name expression yet, we can't do much
+		// statically as we don't know whether it'll be assigned a bif or a
+		// script func.
+
+		// However, hunch is we can just disallow variadic function calls
+		// through script land variables pointing at BIFs and hope no one
+		// gets upset (or we could give them a free pass).
+		const NameExpr* name_expr = func_expr->AsNameExpr();
+		if ( name_expr->Id()->HasVal() )
+			{
+			const zeek::ValPtr func_val = name_expr->Eval(nullptr);
+			zeek::Func* func = func_val->AsFunc();
+
+			// If this isn't a script function, give it a pass.
+			if ( func->GetKind() != Func::SCRIPT_FUNC )
+				return TC_CONTINUE;
+			}
+
+		// It's a script function (or script variable) with a single any
+		// parameter. Ensure we only pass it a single argument, too.
+		if ( expr->AsCallExpr()->Args()->Exprs().size() != 1 )
+			{
+			zeek::reporter->PushLocation(expr->GetLocationInfo());
+			zeek::reporter->Error("argument type mismatch in function call");
+			zeek::reporter->PopLocation();
+			}
+
+		return TC_CONTINUE;
+		}
+	};
+
 void script_validation()
 	{
 	zeek::detail::BreakNextScriptValidation bn_cb;
 	zeek::detail::traverse_all(&bn_cb);
+
+	zeek::detail::CallExprScriptValidation ce_cb;
+	zeek::detail::traverse_all(&ce_cb);
 	}
 	}

@@ -42,6 +42,7 @@
 #include "zeek/ScannedFile.h"
 #include "zeek/Scope.h"
 #include "zeek/ScriptCoverageManager.h"
+#include "zeek/ScriptValidation.h"
 #include "zeek/Stats.h"
 #include "zeek/Stmt.h"
 #include "zeek/Tag.h"
@@ -874,12 +875,15 @@ SetupResult setup(int argc, char** argv, Options* zopts)
 		file_mgr->InitPostScript();
 		dns_mgr->InitPostScript();
 
-		//		dns_mgr->LookupAddr("17.253.144.10");
-
 #ifdef USE_PERFTOOLS_DEBUG
 		}
 #endif
 		set_signal_mask(false);
+
+		// Run some additional script validation now that everything
+		// has been loaded unless there were already some errors.
+		if ( reporter->Errors() == 0 )
+			script_validation();
 
 		if ( reporter->Errors() > 0 )
 			{
