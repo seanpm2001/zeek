@@ -117,7 +117,9 @@ public:
 private:
 	// The constructor does not copy those attributes which are set
 	// by RuleMatcher::BuildRulesTree() (see below).
-	RuleHdrTest(RuleHdrTest& h);
+	RuleHdrTest(const RuleHdrTest& h);
+	RuleHdrTest& operator=(const RuleHdrTest& h);
+
 	// should be const, but lists don't have const version
 
 	// Likewise, the operator== checks only for same test semantics.
@@ -359,11 +361,11 @@ private:
 	void InsertRuleIntoTree(Rule* r, int testnr, RuleHdrTest* dest, int level);
 
 	// Traverse tree building the combined regular expressions.
-	void BuildRegEx(RuleHdrTest* hdr_test, string_list* exprs, int_list* ids);
+	void BuildRegEx(RuleHdrTest* hdr_test, string_list* exprs, int_list* ids) const;
 
 	// Build groups of regular expressions.
 	void BuildPatternSets(RuleHdrTest::pattern_set_list* dst, const string_list& exprs,
-	                      const int_list& ids);
+	                      const int_list& ids) const;
 
 	// Check an arbitrary rule if it's satisfied right now.
 	// eos signals end of stream

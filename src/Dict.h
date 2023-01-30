@@ -486,6 +486,9 @@ public:
 
 	RobustDictIterator& operator=(RobustDictIterator&& other) noexcept
 		{
+		if ( this == &other )
+			return *this;
+
 		delete inserted;
 		inserted = nullptr;
 
@@ -762,8 +765,9 @@ public:
 			}
 
 		detail::DictEntry<T> entry = RemoveRelocateAndAdjust(position);
+		ASSERT(num_entries >= 1);
 		num_entries--;
-		ASSERT(num_entries >= 0);
+
 		// e is about to be invalid. remove it from all references.
 		if ( order )
 			{
@@ -935,13 +939,16 @@ public:
 	void Dump(int level = 0) const
 		{
 		int key_size = 0;
-		for ( int i = 0; i < Capacity(); i++ )
+		if ( table )
 			{
-			if ( table[i].Empty() )
-				continue;
-			key_size += zeek::util::pad_size(table[i].key_size);
-			if ( ! table[i].value )
-				continue;
+			for ( int i = 0; i < Capacity(); i++ )
+				{
+				if ( table[i].Empty() )
+					continue;
+				key_size += zeek::util::pad_size(table[i].key_size);
+				if ( ! table[i].value )
+					continue;
+				}
 			}
 
 #define DICT_NUM_DISTANCES 5
@@ -967,36 +974,42 @@ public:
 			{
 			printf("%-10s %1s %-10s %-4s %-4s %-10s %-18s %-2s\n", "Index", "*", "Bucket", "Dist",
 			       "Off", "Hash", "FibHash", "KeySize");
-			for ( int i = 0; i < Capacity(); i++ )
-				if ( table[i].Empty() )
-					printf("%'10d \n", i);
-				else
-					printf("%'10d %1s %'10d %4d %4d 0x%08x 0x%016" PRIx64 "(%3d) %2d\n", i,
-					       (i <= remap_end ? "*" : ""), BucketByPosition(i), (int)table[i].distance,
-					       OffsetInClusterByPosition(i), uint(table[i].hash),
-					       FibHash(table[i].hash), (int)FibHash(table[i].hash) & 0xFF,
-					       (int)table[i].key_size);
+			if ( table )
+				{
+				for ( int i = 0; i < Capacity(); i++ )
+					if ( table[i].Empty() )
+						printf("%'10d \n", i);
+					else
+						printf("%'10d %1s %'10d %4d %4d 0x%08x 0x%016" PRIx64 "(%3d) %2d\n", i,
+						       (i <= remap_end ? "*" : ""), BucketByPosition(i),
+						       (int)table[i].distance, OffsetInClusterByPosition(i),
+						       uint(table[i].hash), FibHash(table[i].hash),
+						       (int)FibHash(table[i].hash) & 0xFF, (int)table[i].key_size);
+				}
 			}
 		}
 
-	void DistanceStats(int& max_distance, int* distances = 0, int num_distances = 0) const
+	void DistanceStats(int& max_distance, int* distances = nullptr, int num_distances = 0) const
 		{
 		max_distance = 0;
-		for ( int i = 0; i < num_distances; i++ )
-			distances[i] = 0;
-
-		for ( int i = 0; i < Capacity(); i++ )
+		if ( distances )
 			{
-			if ( table[i].Empty() )
-				continue;
-			if ( table[i].distance > max_distance )
-				max_distance = table[i].distance;
-			if ( num_distances <= 0 || ! distances )
-				continue;
-			if ( table[i].distance >= num_distances - 1 )
-				distances[num_distances - 1]++;
-			else
-				distances[table[i].distance]++;
+			for ( int i = 0; i < num_distances; i++ )
+				distances[i] = 0;
+
+			for ( int i = 0; i < Capacity(); i++ )
+				{
+				if ( table[i].Empty() )
+					continue;
+				if ( table[i].distance > max_distance )
+					max_distance = table[i].distance;
+				if ( num_distances <= 0 || ! distances )
+					continue;
+				if ( table[i].distance >= num_distances - 1 )
+					distances[num_distances - 1]++;
+				else
+					distances[table[i].distance]++;
+				}
 			}
 		}
 

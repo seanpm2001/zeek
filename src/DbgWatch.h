@@ -22,8 +22,8 @@ public:
 	~DbgWatch() = default;
 
 protected:
-	Obj* var;
-	Expr* expr;
+	Obj* var = nullptr;
+	Expr* expr = nullptr;
 	};
 
 	} // namespace zeek::detail

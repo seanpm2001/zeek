@@ -116,7 +116,7 @@ int Expr::num_exprs = 0;
 
 Expr::Expr(ExprTag arg_tag) : tag(arg_tag), paren(false), type(nullptr)
 	{
-	SetLocationInfo(&start_location, &end_location);
+	Obj::SetLocationInfo(&start_location, &end_location);
 	opt_info = new ExprOptInfo();
 	++num_exprs;
 	}
@@ -2643,7 +2643,7 @@ AssignExpr::AssignExpr(ExprPtr arg_op1, ExprPtr arg_op2, bool arg_is_init, ValPt
 
 	if ( is_init )
 		{
-		SetLocationInfo(op1->GetLocationInfo(), op2->GetLocationInfo());
+		Obj::SetLocationInfo(op1->GetLocationInfo(), op2->GetLocationInfo());
 		return;
 		}
 
@@ -2662,7 +2662,7 @@ AssignExpr::AssignExpr(ExprPtr arg_op1, ExprPtr arg_op2, bool arg_is_init, ValPt
 
 	val = std::move(arg_val);
 
-	SetLocationInfo(op1->GetLocationInfo(), op2->GetLocationInfo());
+	Obj::SetLocationInfo(op1->GetLocationInfo(), op2->GetLocationInfo());
 	}
 
 bool AssignExpr::TypeCheck(const AttributesPtr& attrs)

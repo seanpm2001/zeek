@@ -31,18 +31,20 @@ public:
 	const char* Helpstring() const { return helpstring; }
 	bool Repeatable() const { return repeatable; }
 
-protected:
-	DebugCmd cmd;
+	DebugCmdInfo& operator=(const DebugCmdInfo& info);
 
-	int32_t num_names;
+protected:
+	DebugCmd cmd = dcInvalid;
+
+	int32_t num_names = 0;
 	std::vector<const char*> names;
-	const char* const helpstring;
+	const char* const helpstring = nullptr;
 
 	// Whether executing this should restart execution of the script.
-	bool resume_execution;
+	bool resume_execution = false;
 
 	// Does entering a blank line repeat this command?
-	bool repeatable;
+	bool repeatable = false;
 	};
 
 using DebugCmdInfoQueue = std::deque<DebugCmdInfo*>;

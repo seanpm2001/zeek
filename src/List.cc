@@ -106,7 +106,7 @@ TEST_CASE("plists")
 
 	CHECK(*list[0] == 1);
 
-	int* new_val = new int(5);
+	int* new_val = new int{5};
 	auto old = list.replace(-1, new_val);
 	delete new_val;
 	CHECK(old == nullptr);

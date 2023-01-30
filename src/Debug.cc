@@ -279,8 +279,11 @@ static void parse_function_name(vector<ParseLocationRec>& result, ParseLocationR
 				return;
 				}
 
-			if ( charinput[strlen(charinput) - 1] == '\n' )
-				charinput[strlen(charinput) - 1] = 0;
+			if ( strlen(charinput) > 0 )
+				{
+				if ( charinput[strlen(charinput) - 1] == '\n' )
+					charinput[strlen(charinput) - 1] = 0;
+				}
 
 			string input = charinput;
 
@@ -635,10 +638,11 @@ int dbg_execute_command(const char* cmd)
 
 	const DebugCmdInfo* info = get_debug_cmd_info(cmd_code);
 	if ( ! info )
+		{
 		reporter->InternalError("Assertion failed: info");
-
-	if ( ! info )
+		// Can't get here, InternalError aborts.
 		return -2; // ### yuck, why -2?
+		}
 
 	return info->ResumeExecution();
 	}

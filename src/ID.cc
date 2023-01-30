@@ -127,7 +127,7 @@ ID::ID(const char* arg_name, IDScope arg_scope, bool arg_is_export)
 
 	infer_return_type = false;
 
-	SetLocationInfo(&start_location, &end_location);
+	Obj::SetLocationInfo(&start_location, &end_location);
 	}
 
 ID::~ID()

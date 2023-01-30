@@ -376,7 +376,7 @@ protected:
 		bool b;
 		int i;
 		zeek_int_t bi;
-		uint32_t u32;
+		uint32_t u32 = 0;
 		double d;
 		const void* p;
 		} key_u;

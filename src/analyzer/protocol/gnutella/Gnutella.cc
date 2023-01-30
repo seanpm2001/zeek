@@ -21,9 +21,7 @@ namespace detail
 
 GnutellaMsgState::GnutellaMsgState()
 	{
-	buffer = "";
 	current_offset = 0;
-	headers = "";
 	msg_hops = 0;
 	msg_len = 0;
 	msg_pos = 0;

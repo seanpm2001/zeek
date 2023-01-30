@@ -48,7 +48,7 @@ public:
 	void IllegalEncoding(const char* msg);
 
 protected:
-	char error_msg[256];
+	char error_msg[256] = {0};
 
 protected:
 	static const std::string default_alphabet;
@@ -56,13 +56,13 @@ protected:
 
 	static int* InitBase64Table(const std::string& alphabet);
 	static int default_base64_table[256];
-	char base64_group[4];
-	int base64_group_next;
-	int base64_padding;
-	int base64_after_padding;
-	int* base64_table;
-	int errored; // if true, we encountered an error - skip further processing
-	Connection* conn;
+	char base64_group[4] = {0};
+	int base64_group_next = 0;
+	int base64_padding = 0;
+	int base64_after_padding = 0;
+	int* base64_table = nullptr;
+	int errored = 0; // if true, we encountered an error - skip further processing
+	Connection* conn = nullptr;
 	};
 
 String* decode_base64(const String* s, const String* a = nullptr, Connection* conn = nullptr);

@@ -323,7 +323,11 @@ public:
 	/**
 	 * Default constructor initialized the argument with type VOID.
 	 */
-	HookArgument() { type = VOID; }
+	HookArgument()
+		{
+		type = VOID;
+		arg.int_ = 0;
+		}
 
 	/**
 	 * Constructor with a boolean argument.
@@ -386,6 +390,7 @@ public:
 		{
 		type = STRING;
 		arg_string = a;
+		arg.int_ = 0;
 		}
 
 	/**
@@ -422,6 +427,7 @@ public:
 		{
 		type = FUNC_RESULT;
 		func_result = fresult;
+		arg.int_ = 0;
 		}
 
 	/**
@@ -449,6 +455,7 @@ public:
 		{
 		type = THREAD_FIELDS;
 		tfields = fpair;
+		arg.int_ = 0;
 		}
 
 	/**
@@ -476,6 +483,7 @@ public:
 		{
 		type = INPUT_FILE;
 		input_file = std::move(file);
+		arg.int_ = 0;
 		}
 
 	/**
@@ -668,7 +676,7 @@ private:
 		const Connection* conn;
 		const Func* func;
 		const detail::Frame* frame;
-		int int_;
+		int int_ = 0;
 		const Val* val;
 		const ValPList* vals;
 		const Args* args;

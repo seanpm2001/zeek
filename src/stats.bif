@@ -88,11 +88,17 @@ function get_conn_stats%(%): ConnStats
 
 	r->Assign(n++, Connection::TotalConnections());
 	r->Assign(n++, Connection::CurrentConnections());
-	r->Assign(n++, session_mgr->CurrentSessions());
 
 	session::Stats s;
 	if ( session_mgr )
+		{
+		r->Assign(n++, session_mgr->CurrentSessions());
 		session_mgr->GetStats(s);
+		}
+	else
+		{
+		r->Assign(n++, 0);
+		}
 
 #define ADD_STAT(x) \
 	r->Assign(n++, static_cast<uint64_t>(session_mgr ? x : 0));

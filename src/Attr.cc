@@ -49,7 +49,7 @@ const char* attr_name(AttrTag t)
 Attr::Attr(AttrTag t, ExprPtr e) : expr(std::move(e))
 	{
 	tag = t;
-	SetLocationInfo(&start_location, &end_location);
+	Obj::SetLocationInfo(&start_location, &end_location);
 	}
 
 Attr::Attr(AttrTag t) : Attr(t, nullptr) { }

@@ -3342,7 +3342,7 @@ function uuid_to_string%(uuid: string%): string
 	static char s[1024];
 	char* sp = s;
 
-	sp += snprintf(sp, s + sizeof(s) - sp,
+	snprintf(sp, s + sizeof(s) - sp,
 		"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 		id->time_low, id->time_mid, id->time_hi_and_version,
 		id->clock_seq_hi_and_reserved, id->clock_seq_low,
@@ -3786,7 +3786,7 @@ function dump_packet%(pkt: pcap_packet, file_name: string%) : bool
 	if ( ! addl_pkt_dumper )
 		addl_pkt_dumper = zeek::iosource_mgr->OpenPktDumper(file_name->CheckString(), true);
 
-	if ( ! addl_pkt_dumper->IsError() )
+	if ( addl_pkt_dumper && ! addl_pkt_dumper->IsError() )
 		{
 		pkt_timeval ts;
 		uint32_t caplen, len, link_type;
@@ -5738,4 +5738,3 @@ function have_spicy_analyzers%(%) : bool
 	%{
 	return zeek::val_mgr->Bool(USE_SPICY_ANALYZERS);
 	%}
-

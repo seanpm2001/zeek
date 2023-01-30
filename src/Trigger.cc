@@ -94,16 +94,16 @@ public:
 		}
 
 protected:
-	Trigger* trigger;
-	double timeout;
-	double time;
+	Trigger* trigger = nullptr;
+	double timeout = 0.0;
+	double time = 0.0;
 	};
 
 Trigger::Trigger(ExprPtr cond, StmtPtr body, StmtPtr timeout_stmts, double timeout, Frame* frame,
                  bool is_return, const Location* location)
 	{
 	timeout_value = timeout;
-	Init(cond, body, timeout_stmts, frame, is_return, location);
+	Init(std::move(cond), std::move(body), std::move(timeout_stmts), frame, is_return, location);
 	}
 
 Trigger::Trigger(WhenInfo* wi, double timeout, const IDSet& _globals,
@@ -120,9 +120,9 @@ Trigger::Trigger(WhenInfo* wi, double timeout, const IDSet& _globals,
 void Trigger::Init(ExprPtr arg_cond, StmtPtr arg_body, StmtPtr arg_timeout_stmts, Frame* arg_frame,
                    bool arg_is_return, const Location* location)
 	{
-	cond = arg_cond;
-	body = arg_body;
-	timeout_stmts = arg_timeout_stmts;
+	cond = std::move(arg_cond);
+	body = std::move(arg_body);
+	timeout_stmts = std::move(arg_timeout_stmts);
 	timer = nullptr;
 	delayed = false;
 	disabled = false;

@@ -11,7 +11,7 @@
 namespace zeek::detail
 	{
 
-int Base64Converter::default_base64_table[256];
+int Base64Converter::default_base64_table[256] = {0};
 const std::string Base64Converter::default_alphabet =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -127,6 +127,9 @@ int Base64Converter::Decode(int len, const char* data, int* pblen, char** pbuf)
 
 	if ( ! pbuf )
 		reporter->InternalError("nil pointer to decoding result buffer");
+
+	if ( ! pblen )
+		reporter->InternalError("nil pointer to decoding result buffer length");
 
 	if ( *pbuf )
 		{

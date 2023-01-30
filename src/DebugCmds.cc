@@ -100,8 +100,12 @@ static void choose_global_symbols_regex(const string& regex, vector<ID*>& choice
 			choices.clear();
 			return;
 			}
-		if ( charinput[strlen(charinput) - 1] == '\n' )
-			charinput[strlen(charinput) - 1] = 0;
+
+		if ( strlen(charinput) > 0 )
+			{
+			if ( charinput[strlen(charinput) - 1] == '\n' )
+				charinput[strlen(charinput) - 1] = 0;
+			}
 
 		string input = charinput;
 		if ( input == "a" )
@@ -127,14 +131,6 @@ static void choose_global_symbols_regex(const string& regex, vector<ID*>& choice
 // DebugCmdInfo implementation
 //
 
-DebugCmdInfo::DebugCmdInfo(const DebugCmdInfo& info) : cmd(info.cmd), helpstring(nullptr)
-	{
-	num_names = info.num_names;
-	names = info.names;
-	resume_execution = info.resume_execution;
-	repeatable = info.repeatable;
-	}
-
 DebugCmdInfo::DebugCmdInfo(DebugCmd arg_cmd, const char* const* arg_names, int arg_num_names,
                            bool arg_resume_execution, const char* const arg_helpstring,
                            bool arg_repeatable)
@@ -146,6 +142,24 @@ DebugCmdInfo::DebugCmdInfo(DebugCmd arg_cmd, const char* const* arg_names, int a
 
 	for ( int i = 0; i < num_names; ++i )
 		names.push_back(arg_names[i]);
+	}
+
+DebugCmdInfo::DebugCmdInfo(const DebugCmdInfo& info) : cmd(info.cmd), helpstring(nullptr)
+	{
+	*this = info;
+	}
+
+DebugCmdInfo& DebugCmdInfo::operator=(const DebugCmdInfo& info)
+	{
+	if ( this == &info )
+		return *this;
+
+	num_names = info.num_names;
+	names = info.names;
+	resume_execution = info.resume_execution;
+	repeatable = info.repeatable;
+
+	return *this;
 	}
 
 const DebugCmdInfo* get_debug_cmd_info(DebugCmd cmd)

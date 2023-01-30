@@ -2268,13 +2268,13 @@ bool same_type(const Type& arg_t1, const Type& arg_t2, bool is_init, bool match_
 
 bool same_attrs(const detail::Attributes* a1, const detail::Attributes* a2)
 	{
-	if ( ! a1 )
-		return (a2 == nullptr);
+	if ( a1 == a2 )
+		return true;
 
-	if ( ! a2 )
-		return (a1 == nullptr);
+	if ( a1 && a2 )
+		return (*a1 == *a2);
 
-	return (*a1 == *a2);
+	return false;
 	}
 
 bool record_promotion_compatible(const RecordType* super_rec, const RecordType* sub_rec)

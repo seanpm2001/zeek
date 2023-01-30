@@ -70,7 +70,7 @@ Stmt::Stmt(StmtTag arg_tag)
 
 	opt_info = new StmtOptInfo();
 
-	SetLocationInfo(&start_location, &end_location);
+	Stmt::SetLocationInfo(&start_location, &end_location);
 
 	++num_stmts;
 	}
@@ -261,7 +261,7 @@ ExprListStmt::ExprListStmt(StmtTag t, ListExprPtr arg_l) : Stmt(t), l(std::move(
 			Error("value of type void illegal");
 		}
 
-	SetLocationInfo(l->GetLocationInfo());
+	Stmt::SetLocationInfo(l->GetLocationInfo());
 	}
 
 ExprListStmt::~ExprListStmt() = default;
@@ -409,13 +409,13 @@ ExprStmt::ExprStmt(ExprPtr arg_e) : Stmt(STMT_EXPR), e(std::move(arg_e))
 	if ( e && e->Tag() != EXPR_CALL && e->IsPure() && e->GetType()->Tag() != TYPE_ERROR )
 		Warn("expression value ignored");
 
-	SetLocationInfo(e->GetLocationInfo());
+	Stmt::SetLocationInfo(e->GetLocationInfo());
 	}
 
 ExprStmt::ExprStmt(StmtTag t, ExprPtr arg_e) : Stmt(t), e(std::move(arg_e))
 	{
 	if ( e )
-		SetLocationInfo(e->GetLocationInfo());
+		Stmt::SetLocationInfo(e->GetLocationInfo());
 	}
 
 ExprStmt::~ExprStmt() = default;
@@ -494,7 +494,7 @@ IfStmt::IfStmt(ExprPtr test, StmtPtr arg_s1, StmtPtr arg_s2)
 
 	const Location* loc1 = s1->GetLocationInfo();
 	const Location* loc2 = s2->GetLocationInfo();
-	SetLocationInfo(loc1, loc2);
+	Stmt::SetLocationInfo(loc1, loc2);
 	}
 
 IfStmt::~IfStmt() = default;
@@ -1765,7 +1765,7 @@ InitStmt::InitStmt(std::vector<IDPtr> arg_inits) : Stmt(STMT_INIT)
 	inits = std::move(arg_inits);
 
 	if ( ! inits.empty() )
-		SetLocationInfo(inits[0]->GetLocationInfo());
+		Stmt::SetLocationInfo(inits[0]->GetLocationInfo());
 	}
 
 ValPtr InitStmt::Exec(Frame* f, StmtFlowType& flow)

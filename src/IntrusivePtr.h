@@ -3,13 +3,23 @@
 #pragma once
 
 #include <functional>
+#include <map>
+#include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "Obj.h"
 
 namespace zeek
 	{
+
+struct RefEntry
+	{
+	time_t ref_time;
+	void* reffer;
+	std::string trace;
+	};
 
 /**
  * A tag class for the #IntrusivePtr constructor which means: adopt
@@ -58,6 +68,8 @@ class OpaqueVal;
 template <class T> class IntrusivePtr
 	{
 public:
+	static std::map<void*, std::vector<RefEntry>> ref_tracker;
+
 	// -- member types
 
 	using pointer = T*;

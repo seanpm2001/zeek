@@ -161,8 +161,8 @@ void AnonymizeIPAddr_A50::init()
 	special_nodes[1].input = special_nodes[1].output = 0xFFFFFFFF;
 
 	method = 0;
-	before_anonymization = 1;
-	new_mapping = 0;
+	before_anonymization = true;
+	new_mapping = false;
 	}
 
 bool AnonymizeIPAddr_A50::PreservePrefix(ipaddr32_t input, int num_bits)
@@ -199,8 +199,8 @@ bool AnonymizeIPAddr_A50::PreservePrefix(ipaddr32_t input, int num_bits)
 
 ipaddr32_t AnonymizeIPAddr_A50::anonymize(ipaddr32_t a)
 	{
-	before_anonymization = 0;
-	new_mapping = 0;
+	before_anonymization = false;
+	new_mapping = false;
 
 	if ( Node* n = find_node(ntohl(a)) )
 		{
@@ -233,7 +233,7 @@ AnonymizeIPAddr_A50::Node* AnonymizeIPAddr_A50::new_node_block()
 
 inline AnonymizeIPAddr_A50::Node* AnonymizeIPAddr_A50::new_node()
 	{
-	new_mapping = 1;
+	new_mapping = true;
 
 	if ( next_free_node )
 		{

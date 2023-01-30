@@ -106,8 +106,8 @@ protected:
 		};
 
 	int method;
-	int before_anonymization;
-	int new_mapping;
+	bool before_anonymization;
+	bool new_mapping;
 
 	// The root of prefix preserving mapping tree.
 	Node* root;

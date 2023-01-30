@@ -139,6 +139,7 @@ HashKey::HashKey(const uint32_t u[], size_t n)
 	{
 	size = write_size = n * sizeof(u[0]);
 	key = (char*)u;
+	key_u.u32 = 0;
 	}
 
 HashKey::HashKey(double d)
@@ -155,12 +156,14 @@ HashKey::HashKey(const char* s)
 	{
 	size = write_size = strlen(s); // note - skip final \0
 	key = (char*)s;
+	key_u.u32 = 0;
 	}
 
 HashKey::HashKey(const String* s)
 	{
 	size = write_size = s->Len();
 	key = (char*)s->Bytes();
+	key_u.u32 = 0;
 	}
 
 HashKey::HashKey(const void* bytes, size_t arg_size)
@@ -168,6 +171,7 @@ HashKey::HashKey(const void* bytes, size_t arg_size)
 	size = write_size = arg_size;
 	key = CopyKey((char*)bytes, size);
 	is_our_dynamic = true;
+	key_u.u32 = 0;
 	}
 
 HashKey::HashKey(const void* arg_key, size_t arg_size, hash_t arg_hash)
@@ -176,6 +180,7 @@ HashKey::HashKey(const void* arg_key, size_t arg_size, hash_t arg_hash)
 	hash = arg_hash;
 	key = CopyKey((char*)arg_key, size);
 	is_our_dynamic = true;
+	key_u.u32 = 0;
 	}
 
 HashKey::HashKey(const void* arg_key, size_t arg_size, hash_t arg_hash, bool /* dont_copy */)
@@ -183,12 +188,16 @@ HashKey::HashKey(const void* arg_key, size_t arg_size, hash_t arg_hash, bool /* 
 	size = write_size = arg_size;
 	hash = arg_hash;
 	key = (char*)arg_key;
+	key_u.u32 = 0;
 	}
 
 HashKey::HashKey(const HashKey& other) : HashKey(other.key, other.size, other.hash) { }
 
 HashKey::HashKey(HashKey&& other) noexcept
 	{
+	if ( this == &other )
+		return;
+
 	hash = other.hash;
 	size = other.size;
 	write_size = other.write_size;
@@ -196,6 +205,7 @@ HashKey::HashKey(HashKey&& other) noexcept
 
 	is_our_dynamic = other.is_our_dynamic;
 	key = other.key;
+	key_u = other.key_u;
 
 	other.size = 0;
 	other.is_our_dynamic = false;

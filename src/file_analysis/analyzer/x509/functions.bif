@@ -32,7 +32,7 @@ STACK_OF(X509)* x509_get_untrusted_stack(zeek::VectorVal* certs_vec)
 		{
 		zeek::emit_builtin_error(zeek::util::fmt("Untrusted certificate stack initialization error: %s",
 		                       ERR_error_string(ERR_get_error(),NULL)));
-		return 0;
+		return nullptr;
 		}
 
 	for ( int i = 1; i < (int) certs_vec->Size(); ++i ) // start at 1 - 0 is host cert
@@ -48,7 +48,7 @@ STACK_OF(X509)* x509_get_untrusted_stack(zeek::VectorVal* certs_vec)
 			{
 			sk_X509_free(untrusted_certs);
 			zeek::emit_builtin_error("No certificate in opaque in stack");
-			return 0;
+			return nullptr;
 			}
 
 		sk_X509_push(untrusted_certs, x);
@@ -73,10 +73,10 @@ X509* x509_get_ocsp_signer(const STACK_OF(X509)* certs,
 	else if ( resp_id->type == V_OCSP_RESPID_KEY )
 		key = resp_id->value.byKey;
 	else
-		return 0;
+		return nullptr;
 #else
 	if ( ! OCSP_resp_get0_id(basic_resp, &key, &name) )
-		return 0;
+		return nullptr;
 #endif
 
 	if ( name )
@@ -85,7 +85,7 @@ X509* x509_get_ocsp_signer(const STACK_OF(X509)* certs,
 
 	// Just like OpenSSL, we just support SHA-1 lookups and bail out otherwise.
 	if ( key->length != SHA_DIGEST_LENGTH )
-		return 0;
+		return nullptr;
 
 	unsigned char* key_hash = key->data;
 
@@ -102,7 +102,7 @@ X509* x509_get_ocsp_signer(const STACK_OF(X509)* certs,
 			return cert;
 		}
 
-	return 0;
+	return nullptr;
 	}
 
 // Convert hash algorithm registry numbers to the OpenSSL EVP_MD.

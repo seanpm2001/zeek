@@ -72,7 +72,7 @@ public:
 	struct Body
 		{
 		detail::StmtPtr stmts;
-		int priority;
+		int priority = 0;
 		std::set<EventGroupPtr> groups;
 		// If any of the groups are disabled, this body is disabled.
 		// The disabled field is updated from EventGroup instances.

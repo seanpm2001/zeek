@@ -99,8 +99,16 @@ Val* RuleMatcher::BuildRuleStateValue(const Rule* rule, const RuleEndpointState*
 	return val;
 	}
 
-RuleHdrTest::RuleHdrTest(RuleHdrTest& h)
+RuleHdrTest::RuleHdrTest(const RuleHdrTest& h)
 	{
+	*this = h;
+	}
+
+RuleHdrTest& RuleHdrTest::operator=(const RuleHdrTest& h)
+	{
+	if ( this == &h )
+		return *this;
+
 	prot = h.prot;
 	offset = h.offset;
 	size = h.size;
@@ -134,6 +142,8 @@ RuleHdrTest::RuleHdrTest(RuleHdrTest& h)
 	ruleset = new IntSet;
 	id = ++idcounter;
 	level = 0;
+
+	return *this;
 	}
 
 RuleHdrTest::~RuleHdrTest()
@@ -455,7 +465,7 @@ void RuleMatcher::InsertRuleIntoTree(Rule* r, int testnr, RuleHdrTest* dest, int
 	InsertRuleIntoTree(r, testnr + 1, newtest, level + 1);
 	}
 
-void RuleMatcher::BuildRegEx(RuleHdrTest* hdr_test, string_list* exprs, int_list* ids)
+void RuleMatcher::BuildRegEx(RuleHdrTest* hdr_test, string_list* exprs, int_list* ids) const
 	{
 	// For each type, get all patterns on this node.
 	for ( Rule* r = hdr_test->pattern_rules; r; r = r->next )
@@ -506,7 +516,7 @@ void RuleMatcher::BuildRegEx(RuleHdrTest* hdr_test, string_list* exprs, int_list
 	}
 
 void RuleMatcher::BuildPatternSets(RuleHdrTest::pattern_set_list* dst, const string_list& exprs,
-                                   const int_list& ids)
+                                   const int_list& ids) const
 	{
 	assert(static_cast<size_t>(exprs.length()) == ids.size());
 

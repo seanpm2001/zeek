@@ -23,6 +23,9 @@ Substring::Substring(const Substring& bst) : String((const String&)bst), _num(),
 
 const Substring& Substring::operator=(const Substring& bst)
 	{
+	if ( this == &bst )
+		return *this;
+
 	String::operator=(bst);
 
 	_aligns.clear();

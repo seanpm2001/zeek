@@ -80,10 +80,10 @@ protected:
 	// Returns the sequence number delivered so far.
 	uint64_t SeqDelivered() const { return seq_delivered_in_lines; }
 
-	u_char* buf; // where we build up the body of the request
-	int offset; // where we are in buf
-	int buf_len; // how big buf is, total
-	unsigned int last_char; // last (non-option) character scanned
+	u_char* buf = nullptr; // where we build up the body of the request
+	int offset = 0; // where we are in buf
+	int buf_len = 0; // how big buf is, total
+	unsigned int last_char = 0; // last (non-option) character scanned
 	int max_line_length; // how large of a line to accumulate before emitting and raising a weird
 
 	uint64_t seq; // last seq number

@@ -22,19 +22,19 @@ public:
 	GnutellaMsgState();
 
 	std::string buffer;
-	int current_offset;
-	int got_CR;
+	int current_offset = 0;
+	int got_CR = 0;
 	std::string headers;
-	char msg[GNUTELLA_MSG_SIZE];
-	u_char msg_hops;
-	unsigned int msg_len;
-	int msg_pos;
-	int msg_sent;
-	u_char msg_type;
-	u_char msg_ttl;
-	char payload[GNUTELLA_MAX_PAYLOAD];
-	unsigned int payload_len;
-	unsigned int payload_left;
+	char msg[GNUTELLA_MSG_SIZE] = {0};
+	u_char msg_hops = 0;
+	unsigned int msg_len = 0;
+	int msg_pos = 0;
+	int msg_sent = 1;
+	u_char msg_type = 0;
+	u_char msg_ttl = 0;
+	char payload[GNUTELLA_MAX_PAYLOAD] = {0};
+	unsigned int payload_len = 0;
+	unsigned int payload_left = 0;
 	};
 
 	} // namespace detail
@@ -65,13 +65,13 @@ private:
 	void DissectMessage(char* msg);
 	void DeliverMessages(int len, const u_char* data, bool orig);
 
-	int state;
-	int new_state;
-	int sent_establish;
+	int state = 0;
+	int new_state = 0;
+	int sent_establish = 0;
 
-	detail::GnutellaMsgState* orig_msg_state;
-	detail::GnutellaMsgState* resp_msg_state;
-	detail::GnutellaMsgState* ms;
+	detail::GnutellaMsgState* orig_msg_state = nullptr;
+	detail::GnutellaMsgState* resp_msg_state = nullptr;
+	detail::GnutellaMsgState* ms = nullptr;
 	};
 
 	} // namespace zeek::analyzer::gnutella

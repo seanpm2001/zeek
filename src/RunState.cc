@@ -329,7 +329,7 @@ void run_loop()
 		// won't necessarily have a packet to process. In these case, sometimes
 		// the time won't get updated for a long time and timers don't function
 		// correctly.
-		if ( (! time_updated && reading_live) )
+		if ( ! time_updated && reading_live )
 			{
 			update_network_time(util::current_time());
 			expire_timers();

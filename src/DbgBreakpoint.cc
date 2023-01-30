@@ -317,7 +317,7 @@ BreakCode DbgBreakpoint::ShouldBreak(Stmt* s)
 	// except potentially if it has a special condition or a repeat count.
 
 	BreakCode code = HasHit();
-	if ( code )
+	if ( code != BC_NO_HIT )
 		g_debugger_state.BreakBeforeNextStmt(true);
 
 	return code;
@@ -335,7 +335,7 @@ BreakCode DbgBreakpoint::ShouldBreak(double t)
 		return BC_NO_HIT;
 
 	BreakCode code = HasHit();
-	if ( code )
+	if ( code != BC_NO_HIT )
 		g_debugger_state.BreakBeforeNextStmt(true);
 
 	return code;

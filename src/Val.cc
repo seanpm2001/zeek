@@ -2095,6 +2095,13 @@ void TableVal::SendToStore(const Val* index, const TableEntryVal* new_entry_val,
 					{
 					if ( attrs->Find(detail::ATTR_EXPIRE_CREATE) )
 						{
+						if ( ! new_entry_val )
+							{
+							emit_builtin_error("did not receive new value for Broker datastore "
+							                   "convert_expiry operation");
+							return;
+							}
+
 						// for create expiry, we have to substract the already elapsed time from
 						// the expiry.
 						auto e = expire_time -
