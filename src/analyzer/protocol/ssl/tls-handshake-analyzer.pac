@@ -166,6 +166,35 @@ refine connection Handshake_Conn += {
 		return true;
 		%}
 
+	function proc_ssl_extensions(rec: HandshakeRecord, extensions: SSLExtension[]) : bool
+		%{
+		if ( ssl_extensions && extensions && extensions->size() > 0 )
+			{
+			static auto ext_vec_type = zeek::id::find_type<zeek::VectorType>("ssl_extension_vec");
+			auto ext_vec = zeek::make_intrusive<zeek::VectorVal>(ext_vec_type);
+			for ( unsigned int i = 0; i < extensions->size(); ++i )
+				{
+				auto& ext = (*extensions)[i];
+				auto length = ext->sourcedata().length();
+				if ( length < 4 )
+					continue;
+
+				length -= 4;
+				const unsigned char* data = ext->sourcedata().begin() + 4;
+				auto value = zeek::make_intrusive<zeek::StringVal>(length, reinterpret_cast<const char*>(data));
+
+				auto el = zeek::make_intrusive<zeek::RecordVal>(zeek::BifType::Record::SSL::Extension);
+				el->Assign(0, zeek::val_mgr->Count(ext->type()));
+				el->Assign(1, std::move(value));
+				ext_vec->Append(std::move(el));
+				}
+
+			zeek::BifEvent::enqueue_ssl_extensions(zeek_analyzer(),
+						zeek_analyzer()->Conn(), ${rec.is_orig} ^ flipped_, std::move(ext_vec));
+			}
+			return true;
+		%}
+
 	function proc_ec_point_formats(rec: HandshakeRecord, point_format_list: uint8[]) : bool
 		%{
 		if ( ! ssl_extension_ec_point_formats )
@@ -629,18 +658,21 @@ refine connection Handshake_Conn += {
 };
 
 refine typeattr ClientHello += &let {
+	exts : bool = $context.connection.proc_ssl_extensions(rec, extensions);
 	proc : bool = $context.connection.proc_client_hello(client_version,
 				gmt_unix_time, random_bytes,
 				session_id, csuits, 0, cmeths);
 };
 
 refine typeattr ServerHello += &let {
+	exts : bool = $context.connection.proc_ssl_extensions(rec, extensions);
 	proc : bool = $context.connection.proc_server_hello(server_version,
 			false, random_bytes, session_id, cipher_suite, 0,
 			compression_method);
 };
 
 refine typeattr ServerHello13 += &let {
+	exts : bool = $context.connection.proc_ssl_extensions(rec, extensions);
 	proc : bool = $context.connection.proc_server_hello(server_version,
 			false, random, 0, cipher_suite, 0,
 			0);

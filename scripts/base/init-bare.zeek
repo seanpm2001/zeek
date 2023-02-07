@@ -4356,6 +4356,11 @@ export {
 		obfuscated_ticket_age: count;
 	};
 
+	type Extension: record {
+		extension_type: count;
+		value: string;
+	};
+
 ## Number of non-DTLS frames that can occur in a DTLS connection before
 ## parsing of the connection is suspended.
 ## DTLS does not immediately stop parsing a connection because other protocols
@@ -4377,6 +4382,8 @@ module GLOBAL;
 type signature_and_hashalgorithm_vec: vector of SSL::SignatureAndHashAlgorithm;
 
 type psk_identity_vec: vector of SSL::PSKIdentity;
+
+type ssl_extension_vec: vector of SSL::Extension;
 
 module X509;
 export {

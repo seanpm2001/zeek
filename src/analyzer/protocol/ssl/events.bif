@@ -109,6 +109,9 @@ event ssl_server_hello%(c: connection, version: count, record_version: count, po
 ##    ssl_connection_flipped
 event ssl_extension%(c: connection, is_client: bool, code: count, val: string%);
 
+## Vectored version of ssl_extension with all extension available at once.
+event ssl_extensions%(c: connection, is_client: bool, extensions: ssl_extension_vec%);
+
 ## Generated for an SSL/TLS Elliptic Curves extension. This TLS extension is
 ## defined in :rfc:`4492` and sent by the client in the initial handshake. It
 ## gives the list of elliptic curves supported by the client.

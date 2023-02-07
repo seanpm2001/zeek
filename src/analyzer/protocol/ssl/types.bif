@@ -1,5 +1,6 @@
 module SSL;
 
+type Extension: record;
 type SignatureAndHashAlgorithm: record;
 type PSKIdentity: record;
 
