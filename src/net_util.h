@@ -11,6 +11,7 @@ enum TransportProto
 	TRANSPORT_TCP,
 	TRANSPORT_UDP,
 	TRANSPORT_ICMP,
+#define NUM_TRANSPORT_PROTOS (TRANSPORT_ICMP + 1)
 	};
 
 extern const char* transport_proto_string(TransportProto proto);

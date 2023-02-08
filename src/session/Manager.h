@@ -102,7 +102,7 @@ private:
 	void InsertSession(detail::Key key, Session* session);
 
 	SessionMap session_map;
-	detail::ProtocolStats* stats;
+	std::unique_ptr<detail::ProtocolStats> stats;
 	};
 
 	} // namespace session
