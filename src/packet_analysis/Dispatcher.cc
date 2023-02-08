@@ -64,6 +64,18 @@ AnalyzerPtr Dispatcher::Lookup(uint32_t identifier) const
 	return nullptr;
 	}
 
+Analyzer* Dispatcher::LookupRaw(uint32_t identifier) const
+	{
+	int64_t index = identifier - lowest_identifier;
+	if ( index >= 0 && index < static_cast<int64_t>(table.size()) )
+		{
+		const auto& ptr = table[index];
+		return ptr ? ptr.get() : nullptr;
+		}
+
+	return nullptr;
+	}
+
 size_t Dispatcher::Count() const
 	{
 	return std::count_if(table.begin(), table.end(),

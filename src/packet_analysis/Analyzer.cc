@@ -68,15 +68,17 @@ bool Analyzer::IsAnalyzer(const char* name)
 	return packet_mgr->GetComponentName(tag) == name;
 	}
 
+/*
 AnalyzerPtr Analyzer::Lookup(uint32_t identifier) const
-	{
-	return dispatcher.Lookup(identifier);
-	}
+    {
+    return dispatcher.Lookup(identifier);
+    }
+    */
 
 bool Analyzer::ForwardPacket(size_t len, const uint8_t* data, Packet* packet,
                              uint32_t identifier) const
 	{
-	auto inner_analyzer = Lookup(identifier);
+	Analyzer* inner_analyzer = dispatcher.LookupRaw(identifier);
 	if ( ! inner_analyzer )
 		{
 		for ( const auto& child : analyzers_to_detect )
@@ -86,14 +88,14 @@ bool Analyzer::ForwardPacket(size_t len, const uint8_t* data, Packet* packet,
 				DBG_LOG(DBG_PACKET_ANALYSIS,
 				        "Protocol detection in %s succeeded, next layer analyzer is %s",
 				        GetAnalyzerName(), child->GetAnalyzerName());
-				inner_analyzer = child;
+				inner_analyzer = child.get();
 				break;
 				}
 			}
 		}
 
 	if ( ! inner_analyzer )
-		inner_analyzer = default_analyzer;
+		inner_analyzer = default_analyzer.get();
 
 	if ( ! inner_analyzer )
 		{
@@ -122,7 +124,7 @@ bool Analyzer::ForwardPacket(size_t len, const uint8_t* data, Packet* packet,
 
 bool Analyzer::ForwardPacket(size_t len, const uint8_t* data, Packet* packet) const
 	{
-	AnalyzerPtr inner_analyzer = nullptr;
+	Analyzer* inner_analyzer = nullptr;
 
 	for ( const auto& child : analyzers_to_detect )
 		{
@@ -131,13 +133,13 @@ bool Analyzer::ForwardPacket(size_t len, const uint8_t* data, Packet* packet) co
 			DBG_LOG(DBG_PACKET_ANALYSIS,
 			        "Protocol detection in %s succeeded, next layer analyzer is %s",
 			        GetAnalyzerName(), child->GetAnalyzerName());
-			inner_analyzer = child;
+			inner_analyzer = child.get();
 			break;
 			}
 		}
 
 	if ( ! inner_analyzer )
-		inner_analyzer = default_analyzer;
+		inner_analyzer = default_analyzer.get();
 
 	if ( ! inner_analyzer )
 		{

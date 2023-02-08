@@ -39,6 +39,8 @@ public:
 	 */
 	AnalyzerPtr Lookup(uint32_t identifier) const;
 
+	Analyzer* LookupRaw(uint32_t identifier) const;
+
 	/**
 	 * Returns the number of registered analyzers.
 	 * @return Number of registered analyzers.

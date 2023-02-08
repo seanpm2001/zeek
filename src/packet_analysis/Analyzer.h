@@ -205,7 +205,7 @@ protected:
 	 * @return The analyzer registered for the given identifier. Returns a
 	 * nullptr if no analyzer is registered.
 	 */
-	AnalyzerPtr Lookup(uint32_t identifier) const;
+	// AnalyzerPtr Lookup(uint32_t identifier) const;
 
 	/**
 	 * Returns an analyzer based on a script-land definition.
