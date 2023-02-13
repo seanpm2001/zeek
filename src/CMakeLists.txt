@@ -30,11 +30,20 @@ set(bro_REGISTER_BIFS CACHE INTERNAL "BIFs for automatic registering" FORCE)
 set(bro_BASE_BIF_SCRIPTS CACHE INTERNAL "Zeek script stubs for BIFs in base distribution of Zeek" FORCE)
 set(bro_PLUGIN_BIF_SCRIPTS CACHE INTERNAL "Zeek script stubs for BIFs in Zeek plugins" FORCE)
 
-# Poor man's JSON escaping as this is rendered into a C string.
-string(REPLACE "\"" "\\\"" ZEEK_BUILD_INFO_ESCAPED "${ZEEK_BUILD_INFO}")
-string(REPLACE "\n" "\\n" ZEEK_BUILD_INFO_ESCAPED "${ZEEK_BUILD_INFO_ESCAPED}")
-configure_file(version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 configure_file(util-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/util-config.h)
+
+# configure_file(version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+  # OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
+  #         ${CMAKE_CURRENT_BINARY_DIR}/version.c.notcreated  # re-run on next build
+add_custom_target(generate_version ALL
+                  COMMAND ${CMAKE_COMMAND}
+                      -D_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+                      -D_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+                      -D_PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+                      -DVERSION=${VERSION}
+                      -P ${CMAKE_CURRENT_SOURCE_DIR}/version.c.cmake
+                  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/version.c.in ${CMAKE_CURRENT_SOURCE_DIR}/version.c.cmake
+                  BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 
 # This creates a custom command to transform a bison output file (inFile)
 # into outFile in order to avoid symbol conflicts:
@@ -546,6 +555,7 @@ if (ZEEK_STANDALONE)
                 ${bro_SUBDIR_LIBS}
                 ${bro_PLUGIN_LIBS}
     )
+    add_dependencies(zeek generate_version)
 
     # npcap/winpcap need to be loaded in delayed mode so that we can set the load path
     # correctly at runtime. See https://npcap.com/guide/npcap-devguide.html#npcap-feature-native
