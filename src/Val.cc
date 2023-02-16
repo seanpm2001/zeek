@@ -3951,6 +3951,8 @@ unsigned int Val::Footprint(std::unordered_set<const Val*>* analyzed_vals) const
 	return fp;
 	}
 
+#define PRE_ALLOC 1
+
 ValManager::ValManager()
 	{
 	empty_string = make_intrusive<StringVal>("");
@@ -3962,6 +3964,13 @@ ValManager::ValManager()
 
 	for ( auto i = 0u; i < PREALLOCATED_INTS; ++i )
 		ints[i] = Val::MakeInt(PREALLOCATED_INT_LOWEST + i);
+
+#if PRE_ALLOC
+	for ( int space = 0; space < NUM_PORT_SPACES; space++ )
+		for ( int port_num = 0; port_num < 65536; port_num++ )
+			all_ports[(space << 16) + port_num] = make_intrusive<PortVal>(
+				PortVal::Mask(port_num, TransportProto(space)));
+#endif
 	}
 
 const PortValPtr& ValManager::Port(uint32_t port_num, TransportProto port_type)
@@ -3972,11 +3981,15 @@ const PortValPtr& ValManager::Port(uint32_t port_num, TransportProto port_type)
 		port_num = 0;
 		}
 
+#if PRE_ALLOC
+	return all_ports[(int(port_type) << 16) + port_num];
+#else
 	auto port_masked = PortVal::Mask(port_num, port_type);
 	if ( ports.count(port_masked) == 0 )
 		ports.insert({port_masked, make_intrusive<PortVal>(port_masked)});
 
 	return ports[port_masked];
+#endif
 	}
 
 const PortValPtr& ValManager::Port(uint32_t port_num)

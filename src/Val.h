@@ -340,6 +340,7 @@ public:
 
 private:
 	std::unordered_map<uint32_t, PortValPtr> ports;
+	std::array<PortValPtr, 4 * 65536> all_ports;
 	std::array<ValPtr, PREALLOCATED_COUNTS> counts;
 	std::array<ValPtr, PREALLOCATED_INTS> ints;
 	StringValPtr empty_string;
