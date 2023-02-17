@@ -1062,6 +1062,7 @@ include(CheckNameserCompat)
 include(GetArchitecture)
 include(FindKqueue)
 include(FindCAres)
+include(FindOpenTelemetry)
 include_directories(BEFORE "auxil/out_ptr/include")
 
 if ((OPENSSL_VERSION VERSION_EQUAL "1.1.0") OR (OPENSSL_VERSION VERSION_GREATER "1.1.0"))

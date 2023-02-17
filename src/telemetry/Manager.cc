@@ -6,6 +6,7 @@
 #include <thread>
 #include <variant>
 
+#include "zeek/zeek-version.h"
 #include "zeek/3rdparty/doctest.h"
 #include "zeek/ID.h"
 #include "zeek/broker/Manager.h"
@@ -13,6 +14,11 @@
 #include "zeek/telemetry/telemetry.bif.h"
 
 #include "broker/telemetry/metric_registry.hh"
+#include "opentelemetry/exporters/ostream/metric_exporter.h"
+#include "opentelemetry/exporters/prometheus/exporter.h"
+#include "opentelemetry/metrics/provider.h"
+#include "opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h"
+#include "opentelemetry/sdk/metrics/meter_provider.h"
 
 namespace
 	{
@@ -58,15 +64,64 @@ Manager::Manager()
 	pimpl.swap(ptr);
 	}
 
-Manager::~Manager() { }
-
-void Manager::InitPostScript() { }
-
-void Manager::InitPostBrokerSetup(broker::endpoint& ep)
+Manager::~Manager()
 	{
-	auto reg = NativeManager::merge(NativeManager{pimpl.get()}, ep);
-	NativeManagerImplPtr ptr{NewRef{}, reg.pimpl()};
-	pimpl.swap(ptr);
+	std::shared_ptr<opentelemetry::metrics::MeterProvider> none;
+	opentelemetry::metrics::Provider::SetMeterProvider(none);
+	}
+
+void Manager::InitPostScript()
+	{
+	std::string name{"zeek"};
+	std::string version{VERSION};
+	std::string schema{"https://opentelemetry.io/schemas/1.2.0"};
+
+	// auto exporter = std::make_unique<opentelemetry::exporter::metrics::OStreamMetricExporter>();
+
+	opentelemetry::exporter::metrics::PrometheusExporterOptions exporter_options;
+	exporter_options.url = "localhost:4040";
+	auto exporter = std::make_unique<opentelemetry::exporter::metrics::PrometheusExporter>(
+		exporter_options);
+
+	opentelemetry::sdk::metrics::PeriodicExportingMetricReaderOptions options;
+	options.export_interval_millis = std::chrono::milliseconds(1000);
+	options.export_timeout_millis = std::chrono::milliseconds(500);
+	auto reader = std::make_unique<opentelemetry::sdk::metrics::PeriodicExportingMetricReader>(
+		std::move(exporter), options);
+
+	auto base_provider = std::shared_ptr<opentelemetry::metrics::MeterProvider>(
+		new opentelemetry::sdk::metrics::MeterProvider());
+	auto provider = std::static_pointer_cast<opentelemetry::sdk::metrics::MeterProvider>(
+		base_provider);
+
+	std::string counter_name = name + "_counter";
+	std::unique_ptr<opentelemetry::sdk::metrics::InstrumentSelector> instrument_selector{
+		new opentelemetry::sdk::metrics::InstrumentSelector(
+			opentelemetry::sdk::metrics::InstrumentType::kCounter, counter_name)};
+	std::unique_ptr<opentelemetry::sdk::metrics::MeterSelector> meter_selector{
+		new opentelemetry::sdk::metrics::MeterSelector(name, version, schema)};
+	std::unique_ptr<opentelemetry::sdk::metrics::View> sum_view{
+		new opentelemetry::sdk::metrics::View{name, "description",
+	                                          opentelemetry::sdk::metrics::AggregationType::kSum}};
+	provider->AddView(std::move(instrument_selector), std::move(meter_selector),
+	                  std::move(sum_view));
+
+	// histogram view
+	std::string histogram_name = name + "_histogram";
+	std::unique_ptr<opentelemetry::sdk::metrics::InstrumentSelector> histogram_instrument_selector{
+		new opentelemetry::sdk::metrics::InstrumentSelector(
+			opentelemetry::sdk::metrics::InstrumentType::kHistogram, histogram_name)};
+	std::unique_ptr<opentelemetry::sdk::metrics::MeterSelector> histogram_meter_selector{
+		new opentelemetry::sdk::metrics::MeterSelector(name, version, schema)};
+	std::unique_ptr<opentelemetry::sdk::metrics::View> histogram_view{
+		new opentelemetry::sdk::metrics::View{
+			name, "description", opentelemetry::sdk::metrics::AggregationType::kHistogram}};
+	provider->AddView(std::move(histogram_instrument_selector), std::move(histogram_meter_selector),
+	                  std::move(histogram_view));
+
+	provider->AddMetricReader(std::move(reader));
+
+	opentelemetry::metrics::Provider::SetMeterProvider(base_provider);
 	}
 
 // -- collect metric stuff -----------------------------------------------------

@@ -39,7 +39,7 @@ namespace zeek::telemetry
 /**
  * Manages a collection of metric families.
  */
-class Manager
+class Manager final
 	{
 public:
 	friend class Broker::Manager;
@@ -50,13 +50,13 @@ public:
 
 	Manager& operator=(const Manager&) = delete;
 
-	virtual ~Manager();
+	~Manager();
 
 	/**
 	 * Initialization of the manager. This is called late during Zeek's
 	 * initialization after any scripts are processed.
 	 */
-	virtual void InitPostScript();
+	void InitPostScript();
 
 	/**
 	 * Supported metric types.
@@ -197,15 +197,13 @@ public:
 		{
 		if constexpr ( std::is_same<ValueType, int64_t>::value )
 			{
-			auto fam = int_counter_fam(Ptr(), prefix, name, labels, helptext, unit, is_sum);
-			return IntCounterFamily{fam};
+			return IntCounterFamily{prefix, name, labels, helptext, unit, is_sum};
 			}
 		else
 			{
 			static_assert(std::is_same<ValueType, double>::value,
 			              "metrics only support int64_t and double values");
-			auto fam = dbl_counter_fam(Ptr(), prefix, name, labels, helptext, unit, is_sum);
-			return DblCounterFamily{fam};
+			return DblCounterFamily{prefix, name, labels, helptext, unit, is_sum};
 			}
 		}
 
@@ -272,15 +270,13 @@ public:
 		{
 		if constexpr ( std::is_same<ValueType, int64_t>::value )
 			{
-			auto fam = int_gauge_fam(Ptr(), prefix, name, labels, helptext, unit, is_sum);
-			return IntGaugeFamily{fam};
+			return IntGaugeFamily{prefix, name, labels, helptext, unit, is_sum};
 			}
 		else
 			{
 			static_assert(std::is_same<ValueType, double>::value,
 			              "metrics only support int64_t and double values");
-			auto fam = dbl_gauge_fam(Ptr(), prefix, name, labels, helptext, unit, is_sum);
-			return DblGaugeFamily{fam};
+			return DblGaugeFamily{prefix, name, labels, helptext, unit, is_sum};
 			}
 		}
 
@@ -369,17 +365,15 @@ public:
 		{
 		if constexpr ( std::is_same<ValueType, int64_t>::value )
 			{
-			auto fam = int_histogram_fam(Ptr(), prefix, name, labels, default_upper_bounds,
-			                             helptext, unit, is_sum);
-			return IntHistogramFamily{fam};
+			// TODO: pass upper bounds
+			return IntHistogramFamily{prefix, name, labels, helptext, unit, is_sum};
 			}
 		else
 			{
 			static_assert(std::is_same<ValueType, double>::value,
 			              "metrics only support int64_t and double values");
-			auto fam = dbl_histogram_fam(Ptr(), prefix, name, labels, default_upper_bounds,
-			                             helptext, unit, is_sum);
-			return DblHistogramFamily{fam};
+			// TODO: pass upper bounds
+			return DblHistogramFamily{prefix, name, labels, helptext, unit, is_sum};
 			}
 		}
 
@@ -465,10 +459,6 @@ protected:
 		}
 
 	broker::telemetry::metric_registry_impl* Ptr() { return pimpl.get(); }
-
-	// Connects all the dots after the Broker Manager constructed the endpoint
-	// for this Zeek instance. Called from Broker::Manager::InitPostScript().
-	void InitPostBrokerSetup(broker::endpoint&);
 
 	IntrusivePtr<broker::telemetry::metric_registry_impl> pimpl;
 
