@@ -762,6 +762,14 @@
 0.000000   MetaHookPost  CallFunction(have_spicy_analyzers, <null>, ()) -> <no result>
 0.000000   MetaHookPost  CallFunction(is_file_analyzer, <frame>, (AllAnalyzers::ANALYZER_ANALYZER_TCPSTATS)) -> <no result>
 0.000000   MetaHookPost  CallFunction(is_packet_analyzer, <frame>, (AllAnalyzers::ANALYZER_ANALYZER_TCPSTATS)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_MD5, Files::ANALYZER_X509)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA1, Files::ANALYZER_MD5)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA1, Files::ANALYZER_X509)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA256, Files::ANALYZER_MD5)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA256, Files::ANALYZER_SHA1)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA256, Files::ANALYZER_X509)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_X509, Files::ANALYZER_MD5)) -> <no result>
+0.000000   MetaHookPost  CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_X509, Files::ANALYZER_SHA1)) -> <no result>
 0.000000   MetaHookPost  CallFunction(lambda_<15261139872714441626>, <frame>, (Analyzer::Logging::include_confirmations, F)) -> <no result>
 0.000000   MetaHookPost  CallFunction(lambda_<2645182068207650863>, <frame>, (Analyzer::Logging::enable, T)) -> <no result>
 0.000000   MetaHookPost  CallFunction(lstrip, ..., ...) -> <no result>
@@ -775,7 +783,21 @@
 0.000000   MetaHookPost  CallFunction(reading_live_traffic, <frame>, ()) -> <no result>
 0.000000   MetaHookPost  CallFunction(reading_traces, <frame>, ()) -> <no result>
 0.000000   MetaHookPost  CallFunction(set_to_regex, <frame>, ({}, (^\.?|\.)(~~)$)) -> <no result>
+0.000000   MetaHookPost  CallFunction(sort, <frame>, ([Files::ANALYZER_MD5, Files::ANALYZER_SHA1, Files::ANALYZER_X509, Files::ANALYZER_SHA256], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})) -> <no result>
+0.000000   MetaHookPost  CallFunction(sort, <frame>, ([Files::ANALYZER_MD5, Files::ANALYZER_X509, Files::ANALYZER_SHA1], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})) -> <no result>
+0.000000   MetaHookPost  CallFunction(sort, <frame>, ([Files::ANALYZER_OCSP_REPLY], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})) -> <no result>
+0.000000   MetaHookPost  CallFunction(sort, <frame>, ([Files::ANALYZER_PE], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})) -> <no result>
+0.000000   MetaHookPost  CallFunction(sort, <frame>, ([Files::ANALYZER_X509, Files::ANALYZER_MD5], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})) -> <no result>
+0.000000   MetaHookPost  CallFunction(sort, <frame>, ([Files::ANALYZER_X509], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})) -> <no result>
 0.000000   MetaHookPost  CallFunction(split_string1, ..., ...) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_MD5, Files::ANALYZER_X509)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA1, Files::ANALYZER_MD5)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA1, Files::ANALYZER_X509)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA256, Files::ANALYZER_MD5)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA256, Files::ANALYZER_SHA1)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA256, Files::ANALYZER_X509)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_X509, Files::ANALYZER_MD5)) -> <no result>
+0.000000   MetaHookPost  CallFunction(strcmp, <frame>, (Files::ANALYZER_X509, Files::ANALYZER_SHA1)) -> <no result>
 0.000000   MetaHookPost  CallFunction(string_to_pattern, <frame>, ((^\.?|\.)()$, F)) -> <no result>
 0.000000   MetaHookPost  CallFunction(sub, <frame>, ((^\.?|\.)(~~)$, <...>/, )) -> <no result>
 0.000000   MetaHookPost  CallFunction(to_count, ..., ...) -> <no result>
@@ -2327,6 +2349,14 @@
 0.000000   MetaHookPre   CallFunction(have_spicy_analyzers, <null>, ())
 0.000000   MetaHookPre   CallFunction(is_file_analyzer, <frame>, (AllAnalyzers::ANALYZER_ANALYZER_TCPSTATS))
 0.000000   MetaHookPre   CallFunction(is_packet_analyzer, <frame>, (AllAnalyzers::ANALYZER_ANALYZER_TCPSTATS))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_MD5, Files::ANALYZER_X509))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA1, Files::ANALYZER_MD5))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA1, Files::ANALYZER_X509))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA256, Files::ANALYZER_MD5))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA256, Files::ANALYZER_SHA1))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_SHA256, Files::ANALYZER_X509))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_X509, Files::ANALYZER_MD5))
+0.000000   MetaHookPre   CallFunction(lambda_<14552471943928245412>, <null>, (Files::ANALYZER_X509, Files::ANALYZER_SHA1))
 0.000000   MetaHookPre   CallFunction(lambda_<15261139872714441626>, <frame>, (Analyzer::Logging::include_confirmations, F))
 0.000000   MetaHookPre   CallFunction(lambda_<2645182068207650863>, <frame>, (Analyzer::Logging::enable, T))
 0.000000   MetaHookPre   CallFunction(lstrip, ..., ...)
@@ -2340,7 +2370,21 @@
 0.000000   MetaHookPre   CallFunction(reading_live_traffic, <frame>, ())
 0.000000   MetaHookPre   CallFunction(reading_traces, <frame>, ())
 0.000000   MetaHookPre   CallFunction(set_to_regex, <frame>, ({}, (^\.?|\.)(~~)$))
+0.000000   MetaHookPre   CallFunction(sort, <frame>, ([Files::ANALYZER_MD5, Files::ANALYZER_SHA1, Files::ANALYZER_X509, Files::ANALYZER_SHA256], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))}))
+0.000000   MetaHookPre   CallFunction(sort, <frame>, ([Files::ANALYZER_MD5, Files::ANALYZER_X509, Files::ANALYZER_SHA1], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))}))
+0.000000   MetaHookPre   CallFunction(sort, <frame>, ([Files::ANALYZER_OCSP_REPLY], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))}))
+0.000000   MetaHookPre   CallFunction(sort, <frame>, ([Files::ANALYZER_PE], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))}))
+0.000000   MetaHookPre   CallFunction(sort, <frame>, ([Files::ANALYZER_X509, Files::ANALYZER_MD5], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))}))
+0.000000   MetaHookPre   CallFunction(sort, <frame>, ([Files::ANALYZER_X509], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))}))
 0.000000   MetaHookPre   CallFunction(split_string1, ..., ...)
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_MD5, Files::ANALYZER_X509))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA1, Files::ANALYZER_MD5))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA1, Files::ANALYZER_X509))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA256, Files::ANALYZER_MD5))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA256, Files::ANALYZER_SHA1))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_SHA256, Files::ANALYZER_X509))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_X509, Files::ANALYZER_MD5))
+0.000000   MetaHookPre   CallFunction(strcmp, <frame>, (Files::ANALYZER_X509, Files::ANALYZER_SHA1))
 0.000000   MetaHookPre   CallFunction(string_to_pattern, <frame>, ((^\.?|\.)()$, F))
 0.000000   MetaHookPre   CallFunction(sub, <frame>, ((^\.?|\.)(~~)$, <...>/, ))
 0.000000   MetaHookPre   CallFunction(to_count, ..., ...)
@@ -3891,6 +3935,14 @@
 0.000000 | HookCallFunction have_spicy_analyzers()
 0.000000 | HookCallFunction is_file_analyzer(AllAnalyzers::ANALYZER_ANALYZER_TCPSTATS)
 0.000000 | HookCallFunction is_packet_analyzer(AllAnalyzers::ANALYZER_ANALYZER_TCPSTATS)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_MD5, Files::ANALYZER_X509)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_SHA1, Files::ANALYZER_MD5)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_SHA1, Files::ANALYZER_X509)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_SHA256, Files::ANALYZER_MD5)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_SHA256, Files::ANALYZER_SHA1)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_SHA256, Files::ANALYZER_X509)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_X509, Files::ANALYZER_MD5)
+0.000000 | HookCallFunction lambda_<14552471943928245412>(Files::ANALYZER_X509, Files::ANALYZER_SHA1)
 0.000000 | HookCallFunction lambda_<15261139872714441626>(Analyzer::Logging::include_confirmations, F)
 0.000000 | HookCallFunction lambda_<2645182068207650863>(Analyzer::Logging::enable, T)
 0.000000 | HookCallFunction lstrip(...)
@@ -3904,7 +3956,21 @@
 0.000000 | HookCallFunction reading_live_traffic()
 0.000000 | HookCallFunction reading_traces()
 0.000000 | HookCallFunction set_to_regex({}, (^\.?|\.)(~~)$)
+0.000000 | HookCallFunction sort([Files::ANALYZER_MD5, Files::ANALYZER_SHA1, Files::ANALYZER_X509, Files::ANALYZER_SHA256], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})
+0.000000 | HookCallFunction sort([Files::ANALYZER_MD5, Files::ANALYZER_X509, Files::ANALYZER_SHA1], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})
+0.000000 | HookCallFunction sort([Files::ANALYZER_OCSP_REPLY], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})
+0.000000 | HookCallFunction sort([Files::ANALYZER_PE], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})
+0.000000 | HookCallFunction sort([Files::ANALYZER_X509, Files::ANALYZER_MD5], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})
+0.000000 | HookCallFunction sort([Files::ANALYZER_X509], lambda_<14552471943928245412>{ return (strcmp(cat(Files::l), cat(Files::r)))})
 0.000000 | HookCallFunction split_string1(...)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_MD5, Files::ANALYZER_X509)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_SHA1, Files::ANALYZER_MD5)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_SHA1, Files::ANALYZER_X509)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_SHA256, Files::ANALYZER_MD5)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_SHA256, Files::ANALYZER_SHA1)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_SHA256, Files::ANALYZER_X509)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_X509, Files::ANALYZER_MD5)
+0.000000 | HookCallFunction strcmp(Files::ANALYZER_X509, Files::ANALYZER_SHA1)
 0.000000 | HookCallFunction string_to_pattern((^\.?|\.)()$, F)
 0.000000 | HookCallFunction sub((^\.?|\.)(~~)$, <...>/, )
 0.000000 | HookCallFunction to_count(...)
