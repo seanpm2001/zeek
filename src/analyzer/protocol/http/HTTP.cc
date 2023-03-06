@@ -1485,6 +1485,15 @@ const String* HTTP_Analyzer::UnansweredRequestMethod()
 
 int HTTP_Analyzer::HTTP_ReplyLine(const char* line, const char* end_of_line)
 	{
+	// There isn't any validation for reply data from an HTTP/0.9 request.
+	if ( request_version.major == 0 && request_version.minor == 9 )
+		{
+		SetVersion(&reply_version, {0, 9});
+		reply_code = 200;
+		reply_reason_phrase = make_intrusive<StringVal>("OK");
+		return 1;
+		}
+
 	const char* rest;
 
 	if ( ! (rest = PrefixMatch(line, end_of_line, "HTTP/")) )
