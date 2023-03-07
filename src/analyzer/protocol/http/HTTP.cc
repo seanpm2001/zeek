@@ -1489,8 +1489,6 @@ int HTTP_Analyzer::HTTP_ReplyLine(const char* line, const char* end_of_line)
 	if ( request_version.major == 0 && request_version.minor == 9 )
 		{
 		SetVersion(&reply_version, {0, 9});
-		reply_code = 200;
-		reply_reason_phrase = make_intrusive<StringVal>("OK");
 		return 1;
 		}
 
