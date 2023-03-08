@@ -583,8 +583,9 @@ void HTTP_Entity::SubmitAllHeaders()
 	}
 
 HTTP_Message::HTTP_Message(HTTP_Analyzer* arg_analyzer, analyzer::tcp::ContentLine_Analyzer* arg_cl,
-                           bool arg_is_orig, int expect_body, int64_t init_header_length)
-	: analyzer::mime::MIME_Message(arg_analyzer)
+                           bool arg_is_orig, int expect_body, int64_t init_header_length,
+                           HTTP_VersionNumber arg_version)
+	: analyzer::mime::MIME_Message(arg_analyzer), version(arg_version)
 	{
 	analyzer = arg_analyzer;
 	content_line = arg_cl;
@@ -812,6 +813,21 @@ void HTTP_Message::Weird(const char* msg)
 	analyzer->Weird(msg);
 	}
 
+void HTTP_Message::Deliver(int len, const char* data, bool trailing_CRLF)
+	{
+	// HTTP/0.9 messages aren't MIME encoded so they don't need to go through
+	// the full processing of the MIME analyzer. Sidestep all of that and just
+	// call DeliverBody directly.
+	if ( version == HTTP_VersionNumber{0, 9} )
+		{
+		if ( current_entity )
+			current_entity->DeliverBody(len, data, trailing_CRLF);
+		return;
+		}
+
+	MIME_Message::Deliver(len, data, trailing_CRLF);
+	}
+
 HTTP_Analyzer::HTTP_Analyzer(Connection* conn)
 	: analyzer::tcp::TCP_ApplicationAnalyzer("HTTP", conn)
 	{
@@ -945,7 +961,8 @@ void HTTP_Analyzer::DeliverStream(int len, const u_char* data, bool is_orig)
 					request_ongoing = 1;
 					unanswered_requests.push(request_method);
 					HTTP_Request();
-					InitHTTPMessage(content_line, request_message, is_orig, HTTP_BODY_MAYBE, len);
+					InitHTTPMessage(content_line, request_message, is_orig, HTTP_BODY_MAYBE, len,
+					                request_version);
 					}
 
 				else
@@ -1006,7 +1023,7 @@ void HTTP_Analyzer::DeliverStream(int len, const u_char* data, bool is_orig)
 						connect_request = false;
 
 					InitHTTPMessage(content_line, reply_message, is_orig, ExpectReplyMessageBody(),
-					                len);
+					                len, reply_version);
 					}
 				else
 					{
@@ -1643,7 +1660,8 @@ void HTTP_Analyzer::HTTP_MessageDone(bool is_orig, HTTP_Message* /* message */)
 	}
 
 void HTTP_Analyzer::InitHTTPMessage(analyzer::tcp::ContentLine_Analyzer* cl, HTTP_Message*& message,
-                                    bool is_orig, int expect_body, int64_t init_header_length)
+                                    bool is_orig, int expect_body, int64_t init_header_length,
+                                    HTTP_VersionNumber version)
 	{
 	if ( message )
 		{
@@ -1654,7 +1672,7 @@ void HTTP_Analyzer::InitHTTPMessage(analyzer::tcp::ContentLine_Analyzer* cl, HTT
 		}
 
 	// DEBUG_MSG("%.6f init http message\n", run_state::network_time);
-	message = new HTTP_Message(this, cl, is_orig, expect_body, init_header_length);
+	message = new HTTP_Message(this, cl, is_orig, expect_body, init_header_length, version);
 	}
 
 void HTTP_Analyzer::SkipEntityData(bool is_orig)

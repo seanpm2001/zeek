@@ -68,6 +68,7 @@ public:
 protected:
 	class UncompressedOutput;
 	friend class UncompressedOutput;
+	friend class HTTP_Message;
 
 	HTTP_Message* http_message;
 	int chunked_transfer_state;
@@ -132,7 +133,7 @@ class HTTP_Message final : public analyzer::mime::MIME_Message
 
 public:
 	HTTP_Message(HTTP_Analyzer* analyzer, analyzer::tcp::ContentLine_Analyzer* cl, bool is_orig,
-	             int expect_body, int64_t init_header_length);
+	             int expect_body, int64_t init_header_length, HTTP_VersionNumber version);
 	~HTTP_Message() override;
 	void Done(bool interrupted, const char* msg);
 	void Done() override { Done(false, "message ends normally"); }
@@ -158,6 +159,8 @@ public:
 	void Weird(const char* msg);
 	bool IsOrig() { return is_orig; }
 
+	void Deliver(int len, const char* data, bool trailing_CRLF) override;
+
 protected:
 	HTTP_Analyzer* analyzer;
 	analyzer::tcp::ContentLine_Analyzer* content_line;
@@ -175,6 +178,7 @@ protected:
 	int64_t content_gap_length;
 
 	HTTP_Entity* current_entity;
+	HTTP_VersionNumber version;
 
 	RecordValPtr BuildMessageStat(bool interrupted, const char* msg);
 	};
@@ -229,7 +233,8 @@ protected:
 	int HTTP_ReplyLine(const char* line, const char* end_of_line);
 
 	void InitHTTPMessage(analyzer::tcp::ContentLine_Analyzer* cl, HTTP_Message*& message,
-	                     bool is_orig, int expect_body, int64_t init_header_length);
+	                     bool is_orig, int expect_body, int64_t init_header_length,
+	                     HTTP_VersionNumber version);
 
 	const char* PrefixMatch(const char* line, const char* end_of_line, const char* prefix);
 	const char* PrefixWordMatch(const char* line, const char* end_of_line, const char* prefix);
