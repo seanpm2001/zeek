@@ -29,6 +29,21 @@ class HTTP_Entity;
 class HTTP_Message;
 class HTTP_Analyzer;
 
+struct HTTP_VersionNumber
+	{
+	uint8_t major = 0;
+	uint8_t minor = 0;
+
+	bool operator==(const HTTP_VersionNumber& other) const
+		{
+		return minor == other.minor && major == other.major;
+		}
+
+	bool operator!=(const HTTP_VersionNumber& other) const { return ! operator==(other); }
+
+	double ToDouble() const { return major + minor * 0.1; }
+	};
+
 class HTTP_Entity final : public analyzer::mime::MIME_Entity
 	{
 public:
@@ -190,21 +205,6 @@ public:
 	void ConnectionFinished(bool half_finished) override;
 	void ConnectionReset() override;
 	void PacketWithRST() override;
-
-	struct HTTP_VersionNumber
-		{
-		uint8_t major = 0;
-		uint8_t minor = 0;
-
-		bool operator==(const HTTP_VersionNumber& other) const
-			{
-			return minor == other.minor && major == other.major;
-			}
-
-		bool operator!=(const HTTP_VersionNumber& other) const { return ! operator==(other); }
-
-		double ToDouble() const { return major + minor * 0.1; }
-		};
 
 	double GetRequestVersion() { return request_version.ToDouble(); };
 	double GetReplyVersion() { return reply_version.ToDouble(); };

@@ -468,7 +468,7 @@ void HTTP_Entity::SubmitHeader(analyzer::mime::MIME_Header* h)
 
 	else if ( analyzer::mime::istrequal(h->get_name(), "transfer-encoding") )
 		{
-		HTTP_Analyzer::HTTP_VersionNumber http_version;
+		HTTP_VersionNumber http_version;
 
 		if ( http_message->analyzer->GetRequestOngoing() )
 			http_version = http_message->analyzer->GetRequestVersionNumber();
@@ -476,8 +476,7 @@ void HTTP_Entity::SubmitHeader(analyzer::mime::MIME_Header* h)
 			http_version = http_message->analyzer->GetReplyVersionNumber();
 
 		data_chunk_t vt = h->get_value_token();
-		if ( analyzer::mime::istrequal(vt, "chunked") &&
-		     http_version == HTTP_Analyzer::HTTP_VersionNumber{1, 1} )
+		if ( analyzer::mime::istrequal(vt, "chunked") && http_version == HTTP_VersionNumber{1, 1} )
 			chunked_transfer_state = BEFORE_CHUNK;
 		}
 
@@ -1229,7 +1228,7 @@ int HTTP_Analyzer::HTTP_RequestLine(const char* line, const char* end_of_line)
 	// If we determined HTTP/0.9 (no HTTP/ in the request line), assert that
 	// minimally we have an URI and a 3 character method (HTTP 0.9 only
 	// supports GET). If that doesn't hold, probably not HTTP or very stange.
-	if ( request_version.major == 0 && request_version.minor == 9 )
+	if ( request_version == HTTP_VersionNumber{0, 9} )
 		{
 		bool maybe_get_method = (end_of_method - line) >= 3;
 		bool has_uri = request_URI && request_URI->Len() > 0;
@@ -1313,7 +1312,7 @@ bool HTTP_Analyzer::ParseRequest(const char* line, const char* end_of_line)
 	}
 
 // Only recognize [0-9][.][0-9].
-HTTP_Analyzer::HTTP_VersionNumber HTTP_Analyzer::HTTP_Version(int len, const char* data)
+HTTP_VersionNumber HTTP_Analyzer::HTTP_Version(int len, const char* data)
 	{
 	if ( len >= 3 && data[0] >= '0' && data[0] <= '9' && data[1] == '.' && data[2] >= '0' &&
 	     data[2] <= '9' )
