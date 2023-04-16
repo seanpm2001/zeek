@@ -5576,10 +5576,30 @@ function anonymize_addr%(a: addr, cl: IPAddrAnonymizationClass%): addr
 ##
 ## returns: a JSON formatted string.
 ##
-## .. zeek:see:: fmt cat cat_sep string_cat print_raw
+## .. zeek:see:: fmt cat cat_sep string_cat print_raw from_json
 function to_json%(val: any, only_loggable: bool &default=F, field_escape_pattern: pattern &default=/^_/%): string
 	%{
 	return val->ToJSON(only_loggable, field_escape_pattern);
+	%}
+
+## A function to convert a JSON string into arbitrary Zeek data.
+##
+## json_str: The JSON string.
+##
+## t: Type of zeek data.
+##
+## returns: Zeek data.
+##
+## .. zeek:see:: to_json
+function from_json%(json_str: string, t: any%): any
+	%{
+	if ( t->GetType()->Tag() != zeek::TYPE_TYPE )
+		{
+		zeek::emit_builtin_error("from_json() requires a type argument");
+		return nullptr;
+		}
+
+	return json_str->FromJSON(t->AsType()->AsTypeType()->GetType());
 	%}
 
 ## Compresses a given path by removing '..'s and the parent directory it

@@ -6,6 +6,8 @@
 
 #include <netdb.h>
 #include <netinet/in.h>
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -1059,6 +1061,309 @@ StringValPtr StringVal::Replace(RE_Matcher* re, const String& repl, bool do_all)
 	r[0] = '\0';
 
 	return make_intrusive<StringVal>(new String(true, result, r - result));
+	}
+
+static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
+	{
+	if ( j.IsNull() )
+		return Val::nil;
+
+	switch ( t->Tag() )
+		{
+		case TYPE_BOOL:
+			{
+			if ( ! j.IsBool() )
+				goto mismatch_err;
+
+			return val_mgr->Bool(j.GetBool());
+			}
+
+		case TYPE_INT:
+			{
+			if ( ! j.IsInt64() )
+				goto mismatch_err;
+
+			return val_mgr->Int(j.GetInt64());
+			}
+
+		case TYPE_COUNT:
+			{
+			if ( ! j.IsUint64() )
+				goto mismatch_err;
+
+			return val_mgr->Count(j.GetUint64());
+			}
+
+		case TYPE_TIME:
+			{
+			if ( ! j.IsNumber() )
+				goto mismatch_err;
+
+			return make_intrusive<TimeVal>(j.GetDouble());
+			}
+
+		case TYPE_DOUBLE:
+			{
+			if ( ! j.IsNumber() )
+				goto mismatch_err;
+
+			return make_intrusive<DoubleVal>(j.GetDouble());
+			}
+
+		case TYPE_PORT:
+			{
+			if ( ! j.IsString() )
+				goto mismatch_err;
+
+			int port = 0;
+			if ( j.GetStringLength() > 0 && j.GetStringLength() < 10 )
+				{
+				char* slash;
+				errno = 0;
+				port = strtol(j.GetString(), &slash, 10);
+				if ( ! errno )
+					{
+					++slash;
+					if ( util::streq(slash, "tcp") )
+						return val_mgr->Port(port, TRANSPORT_TCP);
+					else if ( util::streq(slash, "udp") )
+						return val_mgr->Port(port, TRANSPORT_UDP);
+					else if ( util::streq(slash, "icmp") )
+						return val_mgr->Port(port, TRANSPORT_ICMP);
+					else if ( util::streq(slash, "unknown") )
+						return val_mgr->Port(port, TRANSPORT_UNKNOWN);
+					}
+				}
+
+			emit_builtin_error("wrong port format, must be /[0-9]{1,5}\\/(tcp|udp|icmp|unknown)/");
+			return Val::nil;
+			}
+
+		case TYPE_PATTERN:
+			{
+			if ( ! j.IsString() )
+				goto mismatch_err;
+
+			std::string candidate(j.GetString(), j.GetStringLength());
+			if ( candidate.size() > 2 && candidate.front() == candidate.back() &&
+			     candidate.back() == '/' )
+				{
+				// Remove the '/'s
+				candidate.erase(0, 1);
+				candidate.erase(candidate.size() - 1);
+				}
+
+			auto re = new RE_Matcher(candidate.c_str());
+			if ( ! re->Compile() )
+				{
+				delete re;
+				return Val::nil;
+				}
+
+			return make_intrusive<PatternVal>(re);
+			}
+
+		case TYPE_INTERVAL:
+			{
+			if ( ! j.IsNumber() )
+				goto mismatch_err;
+
+			return make_intrusive<TimeVal>(j.GetDouble());
+			}
+
+		case TYPE_ADDR:
+		case TYPE_SUBNET:
+			{
+			if ( ! j.IsString() )
+				goto mismatch_err;
+
+			std::string candidate(j.GetString(), j.GetStringLength());
+			if ( candidate.front() == '[' && candidate.back() == ']' )
+				{
+				candidate.erase(0, 1);
+				candidate.erase(candidate.size() - 1);
+				}
+
+			if ( t->Tag() == TYPE_ADDR )
+				return make_intrusive<AddrVal>(candidate);
+			else
+				return make_intrusive<SubNetVal>(candidate.c_str());
+			}
+
+		case TYPE_ENUM:
+			{
+			auto et = t->AsEnumType();
+
+			if ( j.IsString() )
+				{
+				auto intval = et->Lookup({j.GetString(), j.GetStringLength()});
+				if ( intval < 0 )
+					{
+					emit_builtin_error(util::fmt("'%s' is not a valid enum for '%s'.",
+					                             j.GetString(), et->GetName().c_str()));
+					return Val::nil;
+					}
+
+				return et->GetEnumVal(intval);
+				}
+			else if ( j.IsInt64() )
+				{
+				auto name = et->Lookup(j.GetInt64());
+				if ( ! name )
+					{
+					emit_builtin_error(util::fmt("'%ld' is not a valid enum for '%s'.",
+					                             j.GetInt64(), et->GetName().c_str()));
+					return Val::nil;
+					}
+
+				return et->GetEnumVal(j.GetInt64());
+				}
+
+			goto mismatch_err;
+			}
+
+		case TYPE_STRING:
+			{
+			if ( ! j.IsString() )
+				goto mismatch_err;
+
+			return make_intrusive<StringVal>(j.GetStringLength(), j.GetString());
+			}
+
+		case TYPE_TABLE:
+			{
+			if ( ! j.IsArray() )
+				goto mismatch_err;
+
+			if ( t->IsTable() )
+				goto unsupport_err;
+
+			auto tt = t->AsSetType();
+			auto tl = tt->GetIndices();
+			auto tv = make_intrusive<TableVal>(IntrusivePtr{NewRef{}, tt});
+
+			for ( const auto& item : j.GetArray() )
+				{
+				ValPtr v;
+				if ( tl->IsPure() )
+					{
+					v = BuildVal(item, tl->GetPureType());
+					if ( ! v )
+						continue;
+					}
+				else
+					{
+					v = BuildVal(item, tl);
+					if ( ! v || v->AsListVal()->Length() == 0 )
+						continue;
+					}
+
+				tv->Assign(std::move(v), nullptr);
+				}
+
+			return tv;
+			}
+
+		case TYPE_RECORD:
+			{
+			if ( ! j.IsObject() )
+				goto mismatch_err;
+
+			auto rt = t->AsRecordType();
+			auto rv = make_intrusive<RecordVal>(IntrusivePtr{NewRef{}, rt});
+			for ( int i = 0; i < rt->NumFields(); ++i )
+				{
+				auto td_i = rt->FieldDecl(i);
+				bool has_member = j.HasMember(td_i->id);
+				bool member_is_null = has_member ? j[td_i->id].IsNull() : true;
+
+				if ( ! has_member || member_is_null )
+					{
+					if ( auto def = td_i->GetAttr(detail::ATTR_DEFAULT).get(); def )
+						{
+						rv->Assign(i, def->GetExpr()->Eval(nullptr));
+						continue;
+						}
+
+					if ( ! td_i->GetAttr(detail::ATTR_OPTIONAL) )
+						emit_builtin_error(util::fmt("Record '%s' field '%s' is null or missing",
+						                             t->GetName().c_str(), td_i->id));
+					rv->Assign(i, Val::nil);
+					continue;
+					}
+
+				rv->Assign(i, BuildVal(j[td_i->id], rt->GetFieldType(i)));
+				}
+
+			return rv;
+			}
+
+		case TYPE_LIST:
+			{
+			if ( ! j.IsArray() )
+				goto mismatch_err;
+
+			auto lt = t->AsTypeList();
+			auto lv = make_intrusive<ListVal>(TYPE_ANY);
+
+			for ( size_t i = 0; i < lt->GetTypes().size(); i++ )
+				{
+				if ( i >= j.GetArray().Size() )
+					break;
+
+				auto v = BuildVal(j.GetArray()[i], lt->GetTypes()[i]);
+				if ( ! v )
+					continue;
+
+				lv->Append(std::move(v));
+				}
+
+			return lv;
+			}
+
+		case TYPE_VECTOR:
+			{
+			if ( ! j.IsArray() )
+				goto mismatch_err;
+
+			auto vt = t->AsVectorType();
+			auto vv = make_intrusive<VectorVal>(IntrusivePtr{NewRef{}, vt});
+			for ( const auto& item : j.GetArray() )
+				{
+				auto v = BuildVal(item, vt->Yield());
+				if ( ! v )
+					continue;
+
+				vv->Assign(vv->Size(), std::move(v));
+				}
+
+			return vv;
+			}
+
+		default:
+		unsupport_err:
+			emit_builtin_error(util::fmt("type '%s' unsupport", type_name(t->Tag())));
+			return Val::nil;
+		}
+
+mismatch_err:
+	emit_builtin_error(util::fmt("type '%s' mismatch", type_name(t->Tag())));
+	return Val::nil;
+	}
+
+ValPtr StringVal::FromJSON(const TypePtr& t) const
+	{
+	rapidjson::Document doc;
+	rapidjson::ParseResult ok = doc.Parse(CheckString(), Len());
+
+	if ( ! ok )
+		{
+		emit_builtin_error(util::fmt("JSON parse error: %s Offset: %lu",
+		                             rapidjson::GetParseError_En(ok.Code()), ok.Offset()));
+		return Val::nil;
+		}
+
+	return BuildVal(doc, t);
 	}
 
 ValPtr StringVal::DoClone(CloneState* state)

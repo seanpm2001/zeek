@@ -582,6 +582,8 @@ public:
 
 	StringValPtr Replace(RE_Matcher* re, const String& repl, bool do_all);
 
+	ValPtr FromJSON(const TypePtr& t) const;
+
 protected:
 	void ValDescribe(ODesc* d) const override;
 	ValPtr DoClone(CloneState* state) override;
