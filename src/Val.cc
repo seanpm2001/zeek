@@ -1304,16 +1304,20 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 				goto mismatch_err;
 
 			auto lt = t->AsTypeList();
+
+			if ( j.GetArray().Size() < lt->GetTypes().size() )
+				{
+				emit_builtin_error("index type doesn't match");
+				return Val::nil;
+				}
+
 			auto lv = make_intrusive<ListVal>(TYPE_ANY);
 
 			for ( size_t i = 0; i < lt->GetTypes().size(); i++ )
 				{
-				if ( i >= j.GetArray().Size() )
-					break;
-
 				auto v = BuildVal(j.GetArray()[i], lt->GetTypes()[i]);
 				if ( ! v )
-					continue;
+					return Val::nil;
 
 				lv->Append(std::move(v));
 				}

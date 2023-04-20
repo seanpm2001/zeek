@@ -82,7 +82,8 @@ type set_t: set[int, bool];
 # index type doesn't match
 event zeek_init()
 	{
-	from_json("[[1, false], [2]]", set_t);
+	print from_json("[[1, false], [2]]", set_t);
+	print from_json("[[1, false], [2, 1]]", set_t);
 	}
 
 @TEST-START-NEXT
