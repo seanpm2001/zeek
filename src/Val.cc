@@ -1153,14 +1153,11 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 				candidate.erase(candidate.size() - 1);
 				}
 
-			auto re = new RE_Matcher(candidate.c_str());
+			auto re = std::make_unique<RE_Matcher>(candidate.c_str());
 			if ( ! re->Compile() )
-				{
-				delete re;
 				return Val::nil;
-				}
 
-			return make_intrusive<PatternVal>(re);
+			return make_intrusive<PatternVal>(re.release());
 			}
 
 		case TYPE_INTERVAL:
@@ -1292,7 +1289,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 					continue;
 					}
 
-				rv->Assign(i, BuildVal(j[td_i->id], tdi->type));
+				rv->Assign(i, BuildVal(j[td_i->id], td_i->type));
 				}
 
 			return rv;

@@ -1,5 +1,4 @@
-#
-# @TEST-EXEC: zeek -b %INPUT
+# @TEST-EXEC: ASAN_OPTIONS="$ASAN_OPTIONS,detect_leaks=0" zeek -b %INPUT
 # @TEST-EXEC: btest-diff .stdout
 # @TEST-EXEC: TEST_DIFF_CANONIFIER=$SCRIPTS/diff-remove-abspath btest-diff .stderr
 

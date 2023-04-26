@@ -34,8 +34,6 @@ void yyerror(const char msg[]);
 %type <ccl_val> TOK_CCL ccl full_ccl
 %type <mach_val> re singleton series string
 
-%destructor { delete $$; } <mach_val>
-
 %%
 flexrule	:	re
 			{ $1->AddAccept(1); zeek::detail::nfa = $1; }
