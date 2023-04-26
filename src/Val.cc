@@ -1189,34 +1189,20 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 
 		case TYPE_ENUM:
 			{
+			if ( ! j.IsString() )
+				goto mismatch_err;
+
 			auto et = t->AsEnumType();
+			auto intval = et->Lookup({j.GetString(), j.GetStringLength()});
 
-			if ( j.IsString() )
+			if ( intval < 0 )
 				{
-				auto intval = et->Lookup({j.GetString(), j.GetStringLength()});
-				if ( intval < 0 )
-					{
-					emit_builtin_error(util::fmt("'%s' is not a valid enum for '%s'.",
-					                             j.GetString(), et->GetName().c_str()));
-					return Val::nil;
-					}
-
-				return et->GetEnumVal(intval);
-				}
-			else if ( j.IsInt64() )
-				{
-				auto name = et->Lookup(j.GetInt64());
-				if ( ! name )
-					{
-					emit_builtin_error(util::fmt("'%ld' is not a valid enum for '%s'.",
-					                             j.GetInt64(), et->GetName().c_str()));
-					return Val::nil;
-					}
-
-				return et->GetEnumVal(j.GetInt64());
+				emit_builtin_error(util::fmt("'%s' is not a valid enum for '%s'.", j.GetString(),
+				                             et->GetName().c_str()));
+				return Val::nil;
 				}
 
-			goto mismatch_err;
+			return et->GetEnumVal(intval);
 			}
 
 		case TYPE_STRING:

@@ -19,7 +19,6 @@ type Foo: record {
 	i: int;
 	pi: double;
 	a: string_vec;
-	c0: Color;
 	c1: Color;
 	p: port;
 	ti: time;
@@ -33,7 +32,7 @@ type Foo: record {
 
 event zeek_init()
 	{
-	local json = "{\"hello\":\"world\",\"t\":true,\"f\":false,\"se\":[[\"192.168.0.1\", \"80/tcp\"], [\"2001:db8::1\", \"8080/udp\"]],\"n\":null,\"i\":123,\"pi\":3.1416,\"a\":[\"1\",\"2\",\"3\",\"4\"],\"su\":[\"fe80::/64\",\"192.168.0.0/16\"],\"c0\":10,\"c1\":\"A::Blue\",\"p\":\"1500/tcp\",\"it\":5000,\"ad\":\"127.0.0.1\",\"s\":\"[::1/128]\",\"re\":\"/a/\",\"ti\":1681652265.042767}";
+	local json = "{\"hello\":\"world\",\"t\":true,\"f\":false,\"se\":[[\"192.168.0.1\", \"80/tcp\"], [\"2001:db8::1\", \"8080/udp\"]],\"n\":null,\"i\":123,\"pi\":3.1416,\"a\":[\"1\",\"2\",\"3\",\"4\"],\"su\":[\"fe80::/64\",\"192.168.0.0/16\"],\"c1\":\"A::Blue\",\"p\":\"1500/tcp\",\"it\":5000,\"ad\":\"127.0.0.1\",\"s\":\"[::1/128]\",\"re\":\"/a/\",\"ti\":1681652265.042767}";
 	local a: Foo = from_json(json, Foo);
 	print a;
 	}
@@ -101,7 +100,6 @@ type Color: enum {
 event zeek_init()
 	{
 	from_json("\"Yellow\"", Color);
-	from_json("40", Color);
 	}
 
 @TEST-START-NEXT
