@@ -1257,25 +1257,21 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			for ( int i = 0; i < rt->NumFields(); ++i )
 				{
 				auto td_i = rt->FieldDecl(i);
-				bool has_member = j.HasMember(td_i->id);
-				bool member_is_null = has_member ? j[td_i->id].IsNull() : true;
+				auto m_it = j.FindMember(td_i->id);
+				bool has_member = m_it != j.MemberEnd();
+				bool member_is_null = has_member ? m_it->value.IsNull() : true;
 
 				if ( ! has_member || member_is_null )
 					{
-					if ( auto def = td_i->GetAttr(detail::ATTR_DEFAULT).get(); def )
-						{
-						rv->Assign(i, def->GetExpr()->Eval(nullptr));
-						continue;
-						}
-
-					if ( ! td_i->GetAttr(detail::ATTR_OPTIONAL) )
+					if ( ! td_i->GetAttr(detail::ATTR_OPTIONAL) &&
+					     ! td_i->GetAttr(detail::ATTR_DEFAULT) )
 						emit_builtin_error(util::fmt("Record '%s' field '%s' is null or missing",
 						                             t->GetName().c_str(), td_i->id));
-					rv->Assign(i, Val::nil);
+
 					continue;
 					}
 
-				rv->Assign(i, BuildVal(j[td_i->id], td_i->type));
+				rv->Assign(i, BuildVal(m_it->value, td_i->type));
 				}
 
 			return rv;
