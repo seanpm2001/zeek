@@ -1110,6 +1110,14 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			return make_intrusive<DoubleVal>(j.GetDouble());
 			}
 
+		case TYPE_INTERVAL:
+			{
+			if ( ! j.IsNumber() )
+				goto mismatch_err;
+
+			return make_intrusive<IntervalVal>(j.GetDouble());
+			}
+
 		case TYPE_PORT:
 			{
 			if ( ! j.IsString() )
@@ -1158,14 +1166,6 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 				return Val::nil;
 
 			return make_intrusive<PatternVal>(re.release());
-			}
-
-		case TYPE_INTERVAL:
-			{
-			if ( ! j.IsNumber() )
-				goto mismatch_err;
-
-			return make_intrusive<IntervalVal>(j.GetDouble());
 			}
 
 		case TYPE_ADDR:
