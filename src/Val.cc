@@ -1168,7 +1168,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			if ( ! j.IsNumber() )
 				goto mismatch_err;
 
-			return make_intrusive<TimeVal>(j.GetDouble());
+			return make_intrusive<IntervalVal>(j.GetDouble());
 			}
 
 		case TYPE_ADDR:
@@ -1235,7 +1235,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			if ( ! j.IsArray() )
 				goto mismatch_err;
 
-			if ( t->IsTable() )
+			if ( ! t->IsSet() )
 				goto unsupport_err;
 
 			auto tt = t->AsSetType();
@@ -1292,7 +1292,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 					continue;
 					}
 
-				rv->Assign(i, BuildVal(j[td_i->id], rt->GetFieldType(i)));
+				rv->Assign(i, BuildVal(j[td_i->id], tdi->type));
 				}
 
 			return rv;

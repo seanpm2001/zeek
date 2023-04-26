@@ -5588,7 +5588,7 @@ function to_json%(val: any, only_loggable: bool &default=F, field_escape_pattern
 ##
 ## t: Type of zeek data.
 ##
-## returns: Zeek data.
+## returns: A value of type t.
 ##
 ## .. zeek:see:: to_json
 function from_json%(json_str: string, t: any%): any
