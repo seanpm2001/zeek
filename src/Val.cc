@@ -1173,7 +1173,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			{
 			if ( ! j.IsString() )
 				goto mismatch_err;
-			
+
 			int width;
 			std::string candidate;
 
@@ -1252,7 +1252,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			for ( const auto& item : j.GetArray() )
 				{
 				ValPtr v;
-				if ( tl->IsPure() )
+				if ( tl->GetTypes().size() == 1 )
 					{
 					v = BuildVal(item, tl->GetPureType());
 					if ( ! v )
