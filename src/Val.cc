@@ -1173,18 +1173,42 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			{
 			if ( ! j.IsString() )
 				goto mismatch_err;
+			
+			int width;
+			std::string candidate;
 
-			std::string candidate(j.GetString(), j.GetStringLength());
-			if ( candidate.front() == '[' && candidate.back() == ']' )
+			if ( t->Tag() == TYPE_ADDR )
+				candidate = std::string(j.GetString(), j.GetStringLength());
+			else
 				{
-				candidate.erase(0, 1);
-				candidate.erase(candidate.size() - 1);
+				std::string_view subnet_sv(j.GetString(), j.GetStringLength());
+				auto pos = subnet_sv.find('/');
+				if ( pos == subnet_sv.npos )
+					{
+					emit_builtin_error(util::fmt("Invalid value for subnet: %s", j.GetString()));
+					return Val::nil;
+					}
+				candidate = std::string(j.GetString(), pos);
+
+				errno = 0;
+				char* end;
+				width = strtol(subnet_sv.data() + pos + 1, &end, 10);
+				if ( subnet_sv.data() + pos + 1 == end || errno )
+					{
+					emit_builtin_error(util::fmt("Invalid value for subnet: %s", j.GetString()));
+					return Val::nil;
+					}
 				}
+
+			if ( candidate.front() == '[' )
+				candidate.erase(0, 1);
+			if ( candidate.back() == ']' )
+				candidate.erase(candidate.size() - 1);
 
 			if ( t->Tag() == TYPE_ADDR )
 				return make_intrusive<AddrVal>(candidate);
 			else
-				return make_intrusive<SubNetVal>(candidate.c_str());
+				return make_intrusive<SubNetVal>(candidate.c_str(), width);
 			}
 
 		case TYPE_ENUM:
