@@ -45,6 +45,7 @@ event my_event(msg: string) &is_used
 """
 Python script sending timestamped and non-timestamped event to TOPIC
 """
+import datetime
 import os
 import sys
 
@@ -79,7 +80,11 @@ with broker.Endpoint() as ep, \
 	ep.publish(broker_topic, my_event)
 
 	print("send event with timestamp")
-	my_event = broker.zeek.Event("my_event", "with ts", ts=23.0)
+	ts = datetime.datetime.utcfromtimestamp(23.0)
+	metadata = {
+		broker.zeek.Event.Metadata.NETWORK_TIMESTAMP: ts,
+	}
+	my_event = broker.zeek.Event("my_event", "with ts", metadata=metadata)
 	ep.publish(broker_topic, my_event)
 
 	ep.shutdown()
