@@ -9,7 +9,7 @@
 # @TEST-EXEC: TOPIC=/zeek/my_topic btest-bg-run server "zeek %INPUT >output"
 # @TEST-EXEC: TOPIC=/zeek/my_topic btest-bg-run client "python3 ../client.py >output"
 #
-# @TEST-EXEC: btest-bg-wait 45
+# @TEST-EXEC: btest-bg-wait 10
 # @TEST-EXEC: btest-diff server/output
 # @TEST-EXEC: btest-diff client/output
 
@@ -80,9 +80,9 @@ with broker.Endpoint() as ep, \
 	ep.publish(broker_topic, my_event)
 
 	print("send event with timestamp")
-	ts = datetime.datetime.utcfromtimestamp(23.0)
+	ts = datetime.datetime.fromtimestamp(23.0, broker.utc)
 	metadata = {
-		broker.zeek.Event.Metadata.NETWORK_TIMESTAMP: ts,
+		broker.zeek.Metadata.NETWORK_TIMESTAMP: ts,
 	}
 	my_event = broker.zeek.Event("my_event", "with ts", metadata=metadata)
 	ep.publish(broker_topic, my_event)
