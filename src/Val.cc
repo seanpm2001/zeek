@@ -6,6 +6,7 @@
 
 #include <netdb.h>
 #include <netinet/in.h>
+#define RAPIDJSON_HAS_STDSTRING 1
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <sys/param.h>
@@ -1065,6 +1066,38 @@ StringValPtr StringVal::Replace(RE_Matcher* re, const String& repl, bool do_all)
 
 static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, const TypePtr& t)
 	{
+	auto mismatch_err = [t, &j]()
+	{
+		std::string json_type;
+		switch ( j.GetType() )
+			{
+			case rapidjson::Type::kNullType:
+				json_type = "null";
+				break;
+			case rapidjson::Type::kFalseType:
+			case rapidjson::Type::kTrueType:
+				json_type = "bool";
+				break;
+			case rapidjson::Type::kObjectType:
+				json_type = "object";
+				break;
+			case rapidjson::Type::kArrayType:
+				json_type = "array";
+				break;
+			case rapidjson::Type::kStringType:
+				json_type = "string";
+				break;
+			case rapidjson::Type::kNumberType:
+				json_type = "number";
+				break;
+			default:
+				json_type = "unknown";
+			}
+
+		return util::fmt("cannot convert JSON type '%s' to Zeek type '%s'", json_type.c_str(),
+		                 type_name(t->Tag()));
+	};
+
 	if ( j.IsNull() )
 		return Val::nil;
 
@@ -1073,7 +1106,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_BOOL:
 			{
 			if ( ! j.IsBool() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return val_mgr->Bool(j.GetBool());
 			}
@@ -1081,7 +1114,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_INT:
 			{
 			if ( ! j.IsInt64() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return val_mgr->Int(j.GetInt64());
 			}
@@ -1089,7 +1122,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_COUNT:
 			{
 			if ( ! j.IsUint64() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return val_mgr->Count(j.GetUint64());
 			}
@@ -1097,7 +1130,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_TIME:
 			{
 			if ( ! j.IsNumber() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return make_intrusive<TimeVal>(j.GetDouble());
 			}
@@ -1105,7 +1138,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_DOUBLE:
 			{
 			if ( ! j.IsNumber() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return make_intrusive<DoubleVal>(j.GetDouble());
 			}
@@ -1113,7 +1146,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_INTERVAL:
 			{
 			if ( ! j.IsNumber() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return make_intrusive<IntervalVal>(j.GetDouble());
 			}
@@ -1121,7 +1154,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_PORT:
 			{
 			if ( ! j.IsString() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			int port = 0;
 			if ( j.GetStringLength() > 0 && j.GetStringLength() < 10 )
@@ -1149,7 +1182,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_PATTERN:
 			{
 			if ( ! j.IsString() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			std::string candidate(j.GetString(), j.GetStringLength());
 			if ( candidate.size() > 2 && candidate.front() == candidate.back() &&
@@ -1171,7 +1204,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_SUBNET:
 			{
 			if ( ! j.IsString() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			int width = 0;
 			std::string candidate;
@@ -1183,7 +1216,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 				std::string_view subnet_sv(j.GetString(), j.GetStringLength());
 				auto pos = subnet_sv.find('/');
 				if ( pos == subnet_sv.npos )
-					return util::fmt("Invalid value for subnet: %s", j.GetString());
+					return util::fmt("invalid value for subnet: '%s'", j.GetString());
 
 				candidate = std::string(j.GetString(), pos);
 
@@ -1191,7 +1224,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 				char* end;
 				width = strtol(subnet_sv.data() + pos + 1, &end, 10);
 				if ( subnet_sv.data() + pos + 1 == end || errno )
-					return util::fmt("Invalid value for subnet: %s", j.GetString());
+					return util::fmt("invalid value for subnet: '%s'", j.GetString());
 				}
 
 			if ( candidate.front() == '[' )
@@ -1208,7 +1241,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_ENUM:
 			{
 			if ( ! j.IsString() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			auto et = t->AsEnumType();
 			auto intval = et->Lookup({j.GetString(), j.GetStringLength()});
@@ -1223,7 +1256,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_STRING:
 			{
 			if ( ! j.IsString() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			return make_intrusive<StringVal>(j.GetStringLength(), j.GetString());
 			}
@@ -1231,10 +1264,10 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_TABLE:
 			{
 			if ( ! j.IsArray() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			if ( ! t->IsSet() )
-				goto unsupport_err;
+				return util::fmt("tables are not supported");
 
 			auto tt = t->AsSetType();
 			auto tl = tt->GetIndices();
@@ -1264,7 +1297,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_RECORD:
 			{
 			if ( ! j.IsObject() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			auto rt = t->AsRecordType();
 			auto rv = make_intrusive<RecordVal>(IntrusivePtr{NewRef{}, rt});
@@ -1273,14 +1306,14 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 				auto td_i = rt->FieldDecl(i);
 				auto m_it = j.FindMember(td_i->id);
 				bool has_member = m_it != j.MemberEnd();
-				bool member_is_null = has_member ? m_it->value.IsNull() : true;
+				bool member_is_null = has_member && m_it->value.IsNull();
 
 				if ( ! has_member || member_is_null )
 					{
 					if ( ! td_i->GetAttr(detail::ATTR_OPTIONAL) &&
 					     ! td_i->GetAttr(detail::ATTR_DEFAULT) )
-						return util::fmt("Record '%s' field '%s' is null or missing",
-						                 t->GetName().c_str(), td_i->id);
+						return util::fmt("required field %s$%s is %s in JSON", t->GetName().c_str(),
+						                 td_i->id, member_is_null ? "null" : "missing");
 
 					continue;
 					}
@@ -1298,7 +1331,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_LIST:
 			{
 			if ( ! j.IsArray() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			auto lt = t->AsTypeList();
 
@@ -1322,7 +1355,7 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 		case TYPE_VECTOR:
 			{
 			if ( ! j.IsArray() )
-				goto mismatch_err;
+				return mismatch_err();
 
 			auto vt = t->AsVectorType();
 			auto vv = make_intrusive<VectorVal>(IntrusivePtr{NewRef{}, vt});
@@ -1342,12 +1375,8 @@ static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, con
 			}
 
 		default:
-		unsupport_err:
 			return util::fmt("type '%s' unsupport", type_name(t->Tag()));
 		}
-
-mismatch_err:
-	return util::fmt("type '%s' mismatch", type_name(t->Tag()));
 	}
 
 std::variant<ValPtr, std::string> ValFromJSON(std::string_view json_str, const TypePtr& t)

@@ -1,5 +1,5 @@
 # @TEST-EXEC: ASAN_OPTIONS="$ASAN_OPTIONS,detect_leaks=0" zeek -b %INPUT
-# @TEST-EXEC: btest-diff .stdout
+# @TEST-EXEC: TEST_DIFF_CANONIFIER= btest-diff .stdout
 # @TEST-EXEC: TEST_DIFF_CANONIFIER=$SCRIPTS/diff-remove-abspath btest-diff .stderr
 
 module A;
@@ -15,6 +15,7 @@ type Foo: record {
 	t: bool;
 	f: bool;
 	n: count &optional;
+	m: count &optional;  # not in input
 	def: count &default = 123;
 	i: int;
 	pi: double;
@@ -52,10 +53,15 @@ event zeek_init()
 
 @TEST-START-NEXT
 type bool_t: bool;
+type Foo: record {
+	a: bool;
+};
+
 # type mismatch error
 event zeek_init()
 	{
 	print from_json("[]", bool_t);
+	print from_json("{\"a\": \"hello\"}", Foo);
 	}
 
 @TEST-START-NEXT
@@ -117,4 +123,15 @@ type Foo: record {
 event zeek_init()
 	{
 	print from_json("{\"t\":null}", Foo);
+	print from_json("{\"hello\": null, \"t\": true}", Foo);
+	}
+
+@TEST-START-NEXT
+type Foo: record {
+	hello: string;
+};
+# extra fields are alright
+event zeek_init()
+	{
+	print from_json("{\"hello\": \"Hello!\", \"t\": true}", Foo);
 	}
