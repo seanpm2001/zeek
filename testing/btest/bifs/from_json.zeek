@@ -33,23 +33,21 @@ type Foo: record {
 event zeek_init()
 	{
 	local json = "{\"hello\":\"world\",\"t\":true,\"f\":false,\"se\":[[\"192.168.0.1\", \"80/tcp\"], [\"2001:db8::1\", \"8080/udp\"]],\"n\":null,\"i\":123,\"pi\":3.1416,\"a\":[\"1\",\"2\",\"3\",\"4\"],\"su\":[\"[aa:bb::0]/32\",\"192.168.0.0/16\"],\"c1\":\"A::Blue\",\"p\":\"1500/tcp\",\"it\":5000,\"ad\":\"127.0.0.1\",\"s\":\"[::1/128]\",\"re\":\"/a/\",\"ti\":1681652265.042767}";
-	local a: Foo = from_json(json, Foo);
-	print a;
+	print from_json(json, Foo);
 	}
 
 @TEST-START-NEXT
 # argument type mismatch
 event zeek_init()
 	{
-	local a = 10;
-	from_json("[]", a);
+	print from_json("[]", 10);
 	}
 
 @TEST-START-NEXT
 # JSON parse error
 event zeek_init()
 	{
-	from_json("{\"hel", string_vec);
+	print from_json("{\"hel", string_vec);
 	}
 
 @TEST-START-NEXT
@@ -57,14 +55,14 @@ type bool_t: bool;
 # type mismatch error
 event zeek_init()
 	{
-	from_json("[]", bool_t);
+	print from_json("[]", bool_t);
 	}
 
 @TEST-START-NEXT
 # type unsupport error
 event zeek_init()
 	{
-	from_json("[]", table_string_of_string);
+	print from_json("[]", table_string_of_string);
 	}
 
 @TEST-START-NEXT
@@ -72,7 +70,7 @@ type port_t: port;
 # wrong port format
 event zeek_init()
 	{
-	from_json("\"80\"", port_t);
+	print from_json("\"80\"", port_t);
 	}
 
 @TEST-START-NEXT
@@ -89,7 +87,7 @@ type pattern_t: pattern;
 # pattern compile error
 event zeek_init()
 	{
-	from_json("\"/([[:print:]]{-}[[:alnum:]]foo)/\"", pattern_t);
+	print from_json("\"/([[:print:]]{-}[[:alnum:]]foo)/\"", pattern_t);
 	}
 
 @TEST-START-NEXT
@@ -99,7 +97,7 @@ type Color: enum {
 # enum error
 event zeek_init()
 	{
-	from_json("\"Yellow\"", Color);
+	print from_json("\"Yellow\"", Color);
 	}
 
 @TEST-START-NEXT
@@ -118,5 +116,5 @@ type Foo: record {
 # record field null or missing
 event zeek_init()
 	{
-	from_json("{\"t\":null}", Foo);
+	print from_json("{\"t\":null}", Foo);
 	}

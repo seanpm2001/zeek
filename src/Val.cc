@@ -1063,7 +1063,7 @@ StringValPtr StringVal::Replace(RE_Matcher* re, const String& repl, bool do_all)
 	return make_intrusive<StringVal>(new String(true, result, r - result));
 	}
 
-static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
+static std::variant<ValPtr, std::string> BuildVal(const rapidjson::Value& j, const TypePtr& t)
 	{
 	if ( j.IsNull() )
 		return Val::nil;
@@ -1143,8 +1143,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 					}
 				}
 
-			emit_builtin_error("wrong port format, must be /[0-9]{1,5}\\/(tcp|udp|icmp|unknown)/");
-			return Val::nil;
+			return "wrong port format, must be /[0-9]{1,5}\\/(tcp|udp|icmp|unknown)/";
 			}
 
 		case TYPE_PATTERN:
@@ -1163,7 +1162,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 
 			auto re = std::make_unique<RE_Matcher>(candidate.c_str());
 			if ( ! re->Compile() )
-				return Val::nil;
+				return "error compiling pattern";
 
 			return make_intrusive<PatternVal>(re.release());
 			}
@@ -1174,7 +1173,7 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			if ( ! j.IsString() )
 				goto mismatch_err;
 
-			int width;
+			int width = 0;
 			std::string candidate;
 
 			if ( t->Tag() == TYPE_ADDR )
@@ -1184,20 +1183,15 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 				std::string_view subnet_sv(j.GetString(), j.GetStringLength());
 				auto pos = subnet_sv.find('/');
 				if ( pos == subnet_sv.npos )
-					{
-					emit_builtin_error(util::fmt("Invalid value for subnet: %s", j.GetString()));
-					return Val::nil;
-					}
+					return util::fmt("Invalid value for subnet: %s", j.GetString());
+
 				candidate = std::string(j.GetString(), pos);
 
 				errno = 0;
 				char* end;
 				width = strtol(subnet_sv.data() + pos + 1, &end, 10);
 				if ( subnet_sv.data() + pos + 1 == end || errno )
-					{
-					emit_builtin_error(util::fmt("Invalid value for subnet: %s", j.GetString()));
-					return Val::nil;
-					}
+					return util::fmt("Invalid value for subnet: %s", j.GetString());
 				}
 
 			if ( candidate.front() == '[' )
@@ -1220,11 +1214,8 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			auto intval = et->Lookup({j.GetString(), j.GetStringLength()});
 
 			if ( intval < 0 )
-				{
-				emit_builtin_error(util::fmt("'%s' is not a valid enum for '%s'.", j.GetString(),
-				                             et->GetName().c_str()));
-				return Val::nil;
-				}
+				return util::fmt("'%s' is not a valid enum for '%s'.", j.GetString(),
+				                 et->GetName().c_str());
 
 			return et->GetEnumVal(intval);
 			}
@@ -1251,21 +1242,20 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 
 			for ( const auto& item : j.GetArray() )
 				{
-				ValPtr v;
-				if ( tl->GetTypes().size() == 1 )
-					{
-					v = BuildVal(item, tl->GetPureType());
-					if ( ! v )
-						continue;
-					}
-				else
-					{
-					v = BuildVal(item, tl);
-					if ( ! v || v->AsListVal()->Length() == 0 )
-						continue;
-					}
+				std::variant<ValPtr, std::string> v;
 
-				tv->Assign(std::move(v), nullptr);
+				if ( tl->GetTypes().size() == 1 )
+					v = BuildVal(item, tl->GetPureType());
+				else
+					v = BuildVal(item, tl);
+
+				if ( ! get_if<ValPtr>(&v) )
+					return v;
+
+				if ( ! std::get<ValPtr>(v) )
+					continue;
+
+				tv->Assign(std::move(std::get<ValPtr>(v)), nullptr);
 				}
 
 			return tv;
@@ -1289,13 +1279,17 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 					{
 					if ( ! td_i->GetAttr(detail::ATTR_OPTIONAL) &&
 					     ! td_i->GetAttr(detail::ATTR_DEFAULT) )
-						emit_builtin_error(util::fmt("Record '%s' field '%s' is null or missing",
-						                             t->GetName().c_str(), td_i->id));
+						return util::fmt("Record '%s' field '%s' is null or missing",
+						                 t->GetName().c_str(), td_i->id);
 
 					continue;
 					}
 
-				rv->Assign(i, BuildVal(m_it->value, td_i->type));
+				auto v = BuildVal(m_it->value, td_i->type);
+				if ( ! get_if<ValPtr>(&v) )
+					return v;
+
+				rv->Assign(i, std::move(std::get<ValPtr>(v)));
 				}
 
 			return rv;
@@ -1309,20 +1303,17 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			auto lt = t->AsTypeList();
 
 			if ( j.GetArray().Size() < lt->GetTypes().size() )
-				{
-				emit_builtin_error("index type doesn't match");
-				return Val::nil;
-				}
+				return "index type doesn't match";
 
 			auto lv = make_intrusive<ListVal>(TYPE_ANY);
 
 			for ( size_t i = 0; i < lt->GetTypes().size(); i++ )
 				{
 				auto v = BuildVal(j.GetArray()[i], lt->GetTypes()[i]);
-				if ( ! v )
-					return Val::nil;
+				if ( ! get_if<ValPtr>(&v) )
+					return v;
 
-				lv->Append(std::move(v));
+				lv->Append(std::move(std::get<ValPtr>(v)));
 				}
 
 			return lv;
@@ -1338,10 +1329,13 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 			for ( const auto& item : j.GetArray() )
 				{
 				auto v = BuildVal(item, vt->Yield());
-				if ( ! v )
+				if ( ! get_if<ValPtr>(&v) )
+					return v;
+
+				if ( ! std::get<ValPtr>(v) )
 					continue;
 
-				vv->Assign(vv->Size(), std::move(v));
+				vv->Assign(vv->Size(), std::move(std::get<ValPtr>(v)));
 				}
 
 			return vv;
@@ -1349,26 +1343,21 @@ static ValPtr BuildVal(const rapidjson::Value& j, const TypePtr& t)
 
 		default:
 		unsupport_err:
-			emit_builtin_error(util::fmt("type '%s' unsupport", type_name(t->Tag())));
-			return Val::nil;
+			return util::fmt("type '%s' unsupport", type_name(t->Tag()));
 		}
 
 mismatch_err:
-	emit_builtin_error(util::fmt("type '%s' mismatch", type_name(t->Tag())));
-	return Val::nil;
+	return util::fmt("type '%s' mismatch", type_name(t->Tag()));
 	}
 
-ValPtr StringVal::FromJSON(const TypePtr& t) const
+std::variant<ValPtr, std::string> ValFromJSON(std::string_view json_str, const TypePtr& t)
 	{
 	rapidjson::Document doc;
-	rapidjson::ParseResult ok = doc.Parse(CheckString(), Len());
+	rapidjson::ParseResult ok = doc.Parse(json_str.data(), json_str.length());
 
 	if ( ! ok )
-		{
-		emit_builtin_error(util::fmt("JSON parse error: %s Offset: %lu",
-		                             rapidjson::GetParseError_En(ok.Code()), ok.Offset()));
-		return Val::nil;
-		}
+		return util::fmt("JSON parse error: %s Offset: %lu", rapidjson::GetParseError_En(ok.Code()),
+		                 ok.Offset());
 
 	return BuildVal(doc, t);
 	}

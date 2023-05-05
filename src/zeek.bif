@@ -5591,15 +5591,35 @@ function to_json%(val: any, only_loggable: bool &default=F, field_escape_pattern
 ## returns: A value of type t.
 ##
 ## .. zeek:see:: to_json
-function from_json%(json_str: string, t: any%): any
+function from_json%(json_str: string, t: any%): from_json_result
 	%{
+	static auto result_type = zeek::id::find_type<RecordType>("from_json_result");
+	static auto v_idx = result_type->FieldOffset("v");
+	static auto valid_idx = result_type->FieldOffset("valid");
+
+	auto rval = zeek::make_intrusive<RecordVal>(result_type);
+
 	if ( t->GetType()->Tag() != zeek::TYPE_TYPE )
 		{
+		rval->Assign(valid_idx, false);
 		zeek::emit_builtin_error("from_json() requires a type argument");
-		return nullptr;
+		return rval;
+		}
+	
+	auto res = zeek::ValFromJSON(json_str->ToStdStringView(), t->AsType()->AsTypeType()->GetType());
+
+	if ( auto val = std::get_if<zeek::ValPtr>(&res) )
+		{
+		rval->Assign(v_idx, *val);
+		rval->Assign(valid_idx, true);
+		}
+	else
+		{
+		rval->Assign(valid_idx, false);
+		zeek::emit_builtin_error(std::get<std::string>(res).c_str());
 		}
 
-	return json_str->FromJSON(t->AsType()->AsTypeType()->GetType());
+	return rval;
 	%}
 
 ## Compresses a given path by removing '..'s and the parent directory it
