@@ -423,7 +423,7 @@ private:
 	           std::string_view fmt, Args&&... args)
 		{
 		static char tmp[512];
-		size_t size = sizeof(tmp);
+		int size = sizeof(tmp);
 		char* buffer = tmp;
 		char* allocated = nullptr;
 
