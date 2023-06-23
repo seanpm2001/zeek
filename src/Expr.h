@@ -32,6 +32,7 @@ class WhenInfo;
 using IDPtr = IntrusivePtr<ID>;
 using ScopePtr = IntrusivePtr<Scope>;
 using ScriptFuncPtr = IntrusivePtr<ScriptFunc>;
+using FunctionIngredientsPtr = IntrusivePtr<FunctionIngredients>;
 
 enum ExprTag : int
 	{
@@ -1454,8 +1455,8 @@ protected:
 class LambdaExpr final : public Expr
 	{
 public:
-	LambdaExpr(std::shared_ptr<FunctionIngredients> ingredients, IDPList outer_ids,
-	           std::string name = "", StmtPtr when_parent = nullptr);
+	LambdaExpr(FunctionIngredientsPtr ingredients, IDPList outer_ids, std::string name = "",
+	           StmtPtr when_parent = nullptr);
 
 	const std::string& Name() const { return my_name; }
 
@@ -1476,7 +1477,7 @@ public:
 
 	const ScriptFuncPtr& MasterFunc() const { return master_func; }
 
-	const std::shared_ptr<FunctionIngredients>& Ingredients() const { return ingredients; }
+	const FunctionIngredientsPtr& Ingredients() const { return ingredients; }
 
 	bool IsReduced(Reducer* c) const override;
 	bool HasReducedOps(Reducer* c) const override;
@@ -1504,7 +1505,7 @@ private:
 
 	void UpdateCaptures(Reducer* c);
 
-	std::shared_ptr<FunctionIngredients> ingredients;
+	FunctionIngredientsPtr ingredients;
 	ScriptFuncPtr master_func;
 	IDPtr lambda_id;
 	IDPList outer_ids;

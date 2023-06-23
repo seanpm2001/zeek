@@ -45,6 +45,7 @@ using StmtPtr = IntrusivePtr<Stmt>;
 
 class ScriptFunc;
 class FunctionIngredients;
+using FunctionIngredientsPtr = IntrusivePtr<FunctionIngredients>;
 
 	} // namespace detail
 
@@ -117,7 +118,7 @@ public:
 
 	// Various ways to add a new event handler to an existing function
 	// (event).
-	void AddBody(const detail::FunctionIngredients& ingr, detail::StmtPtr new_body = nullptr);
+	void AddBody(const detail::FunctionIngredientsPtr ingr, detail::StmtPtr new_body = nullptr);
 	virtual void AddBody(detail::StmtPtr new_body, const std::vector<detail::IDPtr>& new_inits,
 	                     size_t new_frame_size, int priority,
 	                     const std::set<EventGroupPtr>& groups);
@@ -363,7 +364,7 @@ struct CallInfo
 	};
 
 // Class that collects all the specifics defining a Func.
-class FunctionIngredients
+class FunctionIngredients : public zeek::Obj
 	{
 public:
 	// Gathers all of the information from a scope and a function body needed

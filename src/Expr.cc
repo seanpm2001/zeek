@@ -4645,8 +4645,8 @@ void CallExpr::ExprDescribe(ODesc* d) const
 		args->Describe(d);
 	}
 
-LambdaExpr::LambdaExpr(std::shared_ptr<FunctionIngredients> arg_ing, IDPList arg_outer_ids,
-                       std::string name, StmtPtr when_parent)
+LambdaExpr::LambdaExpr(FunctionIngredientsPtr arg_ing, IDPList arg_outer_ids, std::string name,
+                       StmtPtr when_parent)
 	: Expr(EXPR_LAMBDA)
 	{
 	ingredients = std::move(arg_ing);
@@ -4670,7 +4670,7 @@ LambdaExpr::LambdaExpr(std::shared_ptr<FunctionIngredients> arg_ing, IDPList arg
 	// When we build the body, it will get updated with initialization
 	// statements.  Update the ingredients to reflect the new body,
 	// and no more need for initializers.
-	master_func->AddBody(*ingredients);
+	master_func->AddBody(ingredients);
 	master_func->SetScope(ingredients->Scope());
 	ingredients->ClearInits();
 
@@ -4847,7 +4847,7 @@ ValPtr LambdaExpr::Eval(Frame* f) const
 		// distinct.
 		body = body->Duplicate();
 
-	lamb->AddBody(*ingredients, body);
+	lamb->AddBody(ingredients, body);
 	lamb->CreateCaptures(f);
 
 	// Set name to corresponding master func.

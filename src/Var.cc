@@ -835,8 +835,8 @@ void end_func(StmtPtr body, const char* module_name, bool free_of_conditionals)
 	oi->num_stmts = Stmt::GetNumStmts();
 	oi->num_exprs = Expr::GetNumExprs();
 
-	auto ingredients = std::make_unique<FunctionIngredients>(pop_scope(), std::move(body),
-	                                                         module_name);
+	auto ingredients = make_intrusive<FunctionIngredients>(pop_scope(), std::move(body),
+	                                                       module_name);
 	auto id = ingredients->GetID();
 	if ( ! id->HasVal() )
 		{
@@ -845,7 +845,7 @@ void end_func(StmtPtr body, const char* module_name, bool free_of_conditionals)
 		id->SetConst();
 		}
 
-	id->GetVal()->AsFunc()->AddBody(*ingredients);
+	id->GetVal()->AsFunc()->AddBody(ingredients);
 
 	script_coverage_mgr.AddFunction(id, ingredients->Body());
 
