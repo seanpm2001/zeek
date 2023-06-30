@@ -170,7 +170,7 @@ public:
 	/**
 	 * @return Whether @c this and @p other refer to the same histogram.
 	 */
-	constexpr bool IsSameAs(const DblHistogram& other) const noexcept { return hdl == other.hdl; }
+	bool IsSameAs(const DblHistogram& other) const noexcept { return hdl == other.hdl; }
 
 	bool operator==(const DblHistogram& other) const noexcept { return IsSameAs(other); }
 	bool operator!=(const DblHistogram& other) const noexcept { return ! IsSameAs(other); }
