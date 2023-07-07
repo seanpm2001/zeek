@@ -94,10 +94,22 @@ void Manager::SearchDynamicPlugins(const std::string& dir)
 
 	// Check if it's a plugin directory.
 
-	const std::string magic = dir + "/__zeek_plugin__";
+	bool bro_plugin = false;
+	std::string magic = dir + "/__zeek_plugin__";
+
+	if ( ! util::is_file(magic) )
+		{
+		bro_plugin = true;
+		magic = dir + "/__bro_plugin__";
+		}
 
 	if ( util::is_file(magic) )
 		{
+		if ( bro_plugin )
+			reporter->Warning(
+				"__bro_plugin__ is deprecated and will be unsupported in Zeek 7.1. Check to ensure "
+				"that the version of zkg in use is newer than x.y.z.");
+
 		// It's a plugin, get it's name.
 		std::ifstream in(magic.c_str());
 
