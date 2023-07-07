@@ -1076,6 +1076,7 @@ protected:
 	RobustDictIterator<TableEntryVal>* expire_iterator;
 	detail::PrefixTable* subnets;
 	ValPtr def_val;
+	detail::AttrPtr def_attr; // either Attr::nil, &default or &default_insert
 	detail::ExprPtr change_func;
 	std::string broker_store;
 	// prevent recursion of change functions

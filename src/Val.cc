@@ -1878,6 +1878,10 @@ void TableVal::SetAttrs(detail::AttributesPtr a)
 		broker_store = c->AsStringVal()->AsString()->CheckString();
 		broker_mgr->AddForwardedStore(broker_store, {NewRef{}, this});
 		}
+
+	// Cache &default or &default_insert attribute.
+	if ( def_attr = attrs->Find(detail::ATTR_DEFAULT); ! def_attr )
+		def_attr = attrs->Find(detail::ATTR_DEFAULT_INSERT);
 	}
 
 void TableVal::CheckExpireAttr(detail::AttrTag at)
@@ -2131,11 +2135,6 @@ bool TableVal::IsSubsetOf(const TableVal& tv) const
 
 ValPtr TableVal::Default(const ValPtr& index)
 	{
-	auto def_attr = GetAttr(detail::ATTR_DEFAULT);
-
-	if ( ! def_attr )
-		def_attr = GetAttr(detail::ATTR_DEFAULT_INSERT);
-
 	if ( ! def_attr )
 		return nullptr;
 
@@ -2267,8 +2266,8 @@ ValPtr TableVal::FindOrDefault(const ValPtr& index)
 
 	// If this table has a &default_insert attribute,
 	// insert the default value upon a missed lookup.
-	auto def = Default(index);
-	if ( def && GetAttr(detail::ATTR_DEFAULT_INSERT) )
+	const auto& def = Default(index);
+	if ( def && def_attr->Tag() == detail::ATTR_DEFAULT_INSERT )
 		Assign(index, def);
 
 	return def;
@@ -2771,10 +2770,6 @@ void TableVal::InitDefaultFunc(detail::Frame* f)
 	if ( def_val )
 		return;
 
-	auto def_attr = GetAttr(detail::ATTR_DEFAULT);
-	if ( ! def_attr )
-		def_attr = GetAttr(detail::ATTR_DEFAULT_INSERT);
-
 	if ( ! def_attr )
 		return;
 
@@ -3053,6 +3048,9 @@ ValPtr TableVal::DoClone(CloneState* state)
 
 	if ( def_val )
 		tv->def_val = def_val->Clone();
+
+	if ( def_attr )
+		tv->def_attr = def_attr;
 
 	return tv;
 	}
