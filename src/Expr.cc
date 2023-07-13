@@ -5053,7 +5053,7 @@ ValPtr ListExpr::Eval(Frame* f) const
 		evs.push_back(std::move(ev));
 		}
 
-	return make_intrusive<ListVal>(cast_intrusive<TypeList>(type), evs);
+	return make_intrusive<ListVal>(cast_intrusive<TypeList>(type), std::move(evs));
 	}
 
 TypePtr ListExpr::InitType() const
