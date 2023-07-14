@@ -117,7 +117,7 @@ void CPPCompile::DeclareSubclass(const FuncTypePtr& ft, const ProfileFunc* pf, c
 	NL();
 	Emit("static %s %s(%s);", yt_decl, fname, ParamDecl(ft, lambda_ids, pf));
 
-	Emit("class %s_cl : public CPPStmt", fname);
+	Emit("class %s_cl final : public CPPStmt", fname);
 	StartBlock();
 
 	Emit("public:");
@@ -151,7 +151,7 @@ void CPPCompile::DeclareSubclass(const FuncTypePtr& ft, const ProfileFunc* pf, c
 	if ( lambda_ids && lambda_ids->length() > 0 )
 		Emit("%s_cl(const char* name) : CPPStmt(name, %s) { }", fname, loc_info);
 
-	Emit("ValPtr Exec(Frame* f, StmtFlowType& flow) override final");
+	Emit("ValPtr Exec(Frame* f, StmtFlowType& flow) override");
 	StartBlock();
 
 	Emit("flow = FLOW_RETURN;");
