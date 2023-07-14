@@ -5766,3 +5766,68 @@ function have_spicy_analyzers%(%) : bool
 	%{
 	return zeek::val_mgr->Bool(USE_SPICY_ANALYZERS);
 	%}
+
+## Converts a set to a vector containing the same type as the index of the set.
+## Emits an error and returns false if the set has more than one index type, or
+## if anything other than a set is paased as an argument.
+function set_to_vector%(s: any%): any
+	%{
+	auto arg_type = s->GetType();
+
+	if ( ! arg_type->IsSet() )
+		{
+		zeek::emit_builtin_error("argument is not a vector");
+		return zeek::val_mgr->Bool(false);
+		}
+
+	auto set_type = s->GetType<SetType>();
+	auto index_types = set_type->GetIndexTypes();
+
+	if ( index_types.size() > 1 )
+		{
+		zeek::emit_builtin_error("set_to_vector: set can only have single index type");
+		return zeek::val_mgr->Bool(false);
+		}
+
+	auto ret_type = make_intrusive<VectorType>(set_type->GetIndices());
+	auto ret = make_intrusive<VectorVal>(ret_type);
+
+	auto lv = s->AsTableVal()->ToListVal();
+	auto n = lv->Length();
+
+	for ( int i = 0; i < n; ++i )
+		if ( ! ret->Assign(i, lv->Idx(i)) )
+			zeek::emit_builtin_error("failed to insert element into vector");
+
+	return ret;
+	%}
+
+## Converts a vector to a set containing the same type as the vector. Emits an
+## error if anything other than a vector is passed as an argument.
+function vector_to_set%(v: any%): any
+	%{
+	auto arg_type = v->GetType();
+
+	if ( ! IsVector(arg_type->Tag()) )
+		{
+		zeek::emit_builtin_error("argument is not a vector");
+		return zeek::val_mgr->Bool(false);
+		}
+
+	auto tlp = make_intrusive<TypeList>(arg_type->Yield());
+	tlp->Append(arg_type->Yield());
+
+	auto ret_type = make_intrusive<SetType>(tlp, nullptr);
+	auto ret = make_intrusive<TableVal>(ret_type);
+
+	auto vv = v->AsVectorVal();
+	size_t size = vv->Size();
+
+	for ( size_t i = 0; i < size; i++ )
+		{
+		auto ve = vv->ValAt(i);
+		ret->Assign(std::move(ve), nullptr);
+		}
+
+	return ret;
+	%}
